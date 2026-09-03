@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { AppLogger, logger } from '../src/logger/index.ts';
+import { AppLogger, logger } from '@/logger';
 
 describe('Logger Module', () => {
   it('should instantiate AppLogger correctly', () => {

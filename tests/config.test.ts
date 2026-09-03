@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { config } from '../src/config/index.ts';
+import { config } from '@/config';
 
 describe('Configuration Module', () => {
   it('should load config correctly and be frozen (immutable)', () => {

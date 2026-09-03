@@ -7,7 +7,7 @@ import {
   SlotConflictError,
   UnauthorizedError,
   ValidationError,
-} from '../src/errors/index.ts';
+} from '@/errors';
 
 describe('Errors & Resolver Module', () => {
   it('should instantiate AppError subclasses correctly', () => {
