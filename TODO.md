@@ -26,11 +26,11 @@
   - Dependensi `pino` dan `pino-pretty` terpasang.
   - `src/logger/init.ts`, `src/logger/logger.ts` (`AppLogger`), dan `src/logger/index.ts` dibuat.
   - Mendukung `logger.child({ module })`, `logger.success()`, `logger.error()`, `logger.info()`, `logger.warn()`, `logger.debug()`.
-- [ ] **1.5.2 Standarisasi Custom Application Errors & Error Codes (`src/errors/`)**
-  - Buat `src/errors/codes.ts`: Definisi kode error standar (`ERR_UNAUTHORIZED`, `ERR_SLOT_CONFLICT`, `ERR_INVALID_SLOT`, `ERR_ROOM_NOT_FOUND`, `ERR_PAST_DATE`, `ERR_USER_NOT_REGISTERED`, dll.).
-  - Buat `src/errors/app-error.ts`: Implementasi `AppError` (extends `Error`) dengan properti `code`, `userMessage` (pesan edukatif untuk korti/staf), dan `metadata`.
-  - Sediakan subclass khusus: `UnauthorizedError`, `SlotConflictError`, `ValidationError`, `NotFoundError`.
-  - Buat `src/errors/index.ts` untuk barrel export.
+- [x] **1.5.2 Standarisasi Custom Application Errors & Error Codes (`src/errors/`)**
+  - `src/errors/codes.ts`: Definisi enum/konstanta `ErrorCode` lengkap.
+  - `src/errors/app-error.ts`: Implementasi `AppError`, `UnauthorizedError`, `SlotConflictError`, `ValidationError`, `NotFoundError`.
+  - `src/errors/resolver.ts`: Error resolver berbasis `switch-case` (`resolveError()`) untuk SQLite unique constraint mapping, pembuatan pesan WhatsApp Japri/DM, dan level log.
+  - `src/errors/index.ts`: Barrel export.
 - [ ] **1.5.3 Standarisasi Kontrak Respon Sistem (Result Pattern) (`src/types/`)**
   - Buat `src/types/result.ts`: Generic type-safe `Result<T, E = AppError>` (`{ success: true, data: T } | { success: false, error: E }`).
   - Sediakan helper functions `ok<T>(data: T): Result<T>` dan `err<E>(error: E): Result<never, E>`.
