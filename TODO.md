@@ -35,7 +35,7 @@
   - Buat `src/types/result.ts`: Generic type-safe `Result<T, E = AppError>` (`{ success: true, data: T } | { success: false, error: E }`).
   - Sediakan helper functions `ok<T>(data: T): Result<T>` dan `err<E>(error: E): Result<never, E>`.
   - Buat `src/types/index.ts` untuk barrel export.
-- [ ] **1.5.4 Template & Formatter Pesan WhatsApp (`src/templates/`)**
+- [x] **1.5.4 Template & Formatter Pesan WhatsApp (`src/templates/`)**
   - Buat `src/templates/batch-recap.ts`: Builder template rekap batch sukses untuk grup WA (header tanggal, daftar ruangan, jam SKS, peminjam).
   - Buat `src/templates/direct-message.ts`: Builder template penolakan/error khusus Japri/DM (penjelasan penyebab dan saran solutif).
   - Buat `src/templates/reaction.ts`: Standarisasi emoji reaksi status interaksi (`⏳` proses, `✅` sukses buffer, `❌` gagal).
