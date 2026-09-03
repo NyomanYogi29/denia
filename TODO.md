@@ -31,7 +31,7 @@
   - `src/errors/app-error.ts`: Implementasi `AppError`, `UnauthorizedError`, `SlotConflictError`, `ValidationError`, `NotFoundError`.
   - `src/errors/resolver.ts`: Error resolver berbasis `switch-case` (`resolveError()`) untuk SQLite unique constraint mapping, pembuatan pesan WhatsApp Japri/DM, dan level log.
   - `src/errors/index.ts`: Barrel export.
-- [ ] **1.5.3 Standarisasi Kontrak Respon Sistem (Result Pattern) (`src/types/`)**
+- [x] **1.5.3 Standarisasi Kontrak Respon Sistem (Result Pattern) (`src/types/`)**
   - Buat `src/types/result.ts`: Generic type-safe `Result<T, E = AppError>` (`{ success: true, data: T } | { success: false, error: E }`).
   - Sediakan helper functions `ok<T>(data: T): Result<T>` dan `err<E>(error: E): Result<never, E>`.
   - Buat `src/types/index.ts` untuk barrel export.
