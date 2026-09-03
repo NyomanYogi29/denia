@@ -7,7 +7,7 @@ import {
   SlotConflictError,
   UnauthorizedError,
   ValidationError,
-} from '@/errors';
+} from '@/core/errors';
 
 describe('Errors & Resolver Module', () => {
   it('should instantiate AppError subclasses correctly', () => {

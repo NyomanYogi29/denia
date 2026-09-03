@@ -11,7 +11,7 @@ import {
   ROOM_MAP,
   isValidRoomCode,
   getRoomInfo,
-} from '@/constants';
+} from '@/core/constants';
 
 describe('Constants Module', () => {
   describe('Academic Slots Constants (SKS Matrix)', () => {

@@ -1,6 +1,6 @@
 import { Database } from 'bun:sqlite';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
-import { config } from '@/config';
+import { config } from '@/core/config/index.ts';
 import * as schema from './schema.ts'
 
 // Inisialisasi koneksi native SQLite via bun:sqlite

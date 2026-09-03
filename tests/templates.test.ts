@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'bun:test';
-import { ErrorCode, resolveError, SlotConflictError } from '../src/errors/index.ts';
+import { ErrorCode, resolveError, SlotConflictError } from '../src/core/errors/index.ts';
 import {
   formatBatchRecap,
   formatDirectErrorMessage,
   ReactionEmoji,
   type BatchBookingItem,
-} from '../src/templates/index.ts';
+} from '../src/core/templates/index.ts';
 
 describe('Templates Module', () => {
   describe('ReactionEmoji', () => {

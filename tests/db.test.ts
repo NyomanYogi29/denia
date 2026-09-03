@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { eq } from 'drizzle-orm';
-import { db, sqlite, users, bookings } from '@/db';
+import { db, sqlite, users, bookings } from '@/core/db';
 
 describe('Database & Schema Module', () => {
   const testNim = '2315051099';

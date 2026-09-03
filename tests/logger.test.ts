@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { AppLogger, logger } from '@/logger';
+import { AppLogger, logger } from '@/core/logger';
 
 describe('Logger Module', () => {
   it('should instantiate AppLogger correctly', () => {

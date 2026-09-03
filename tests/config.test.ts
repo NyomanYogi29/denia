@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { config } from '@/config';
+import { config } from '@/core/config';
 
 describe('Configuration Module', () => {
   it('should load config correctly and be frozen (immutable)', () => {

@@ -9,8 +9,8 @@ import {
   isoToDateString,
   formatIndonesianDate,
   parseRoomCode,
-} from '@/utils';
-import { ErrorCode } from '@/errors';
+} from '@/core/utils';
+import { ErrorCode } from '@/core/errors';
 
 describe('Utils Module', () => {
   describe('validateSlotCharacters', () => {

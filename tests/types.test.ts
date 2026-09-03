@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { AppError, UnauthorizedError } from '../src/errors/index.ts';
-import { err, ok, type Result } from '../src/types/index.ts';
+import { AppError, UnauthorizedError } from '../src/core/errors/index.ts';
+import { err, ok, type Result } from '../src/core/types/index.ts';
 
 describe('Types Module (Result Pattern)', () => {
   it('should return ok result with success: true and valid payload', () => {

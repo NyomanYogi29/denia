@@ -2,10 +2,10 @@ import {
   ROOM_MAP,
   isValidRoomCode,
   type RoomInfo,
-} from '@/constants';
-import { ok, err, type Result } from '@/types';
-import { ValidationError, NotFoundError, ErrorCode } from '@/errors';
-import { logger } from '@/logger';
+} from '@/core/constants';
+import { ok, err, type Result } from '@/core/types';
+import { ValidationError, NotFoundError, ErrorCode } from '@/core/errors';
+import { logger } from '@/core/logger';
 
 const log = logger.child({ module: 'ROOM_PARSER' });
 

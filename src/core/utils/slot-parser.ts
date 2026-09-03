@@ -4,10 +4,10 @@ import {
   MAX_BOOKING_SKS,
   isValidSlotCode,
   type SlotCode,
-} from '@/constants';
-import { ok, err, type Result } from '@/types';
-import { ValidationError, ErrorCode } from '@/errors';
-import { logger } from '@/logger';
+} from '@/core/constants';
+import { ok, err, type Result } from '@/core/types';
+import { ValidationError, ErrorCode } from '@/core/errors';
+import { logger } from '@/core/logger';
 
 const log = logger.child({ module: 'SLOT_PARSER' });
 
