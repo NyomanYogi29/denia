@@ -44,15 +44,18 @@
 ---
 
 ### 🔹 Fase 2: Kamus Domain & Validasi Inti (*Core Utilities*)
-- [ ] **2.1 Kamus Waktu Akademik SKS (`src/constants/slots.ts`)**
+- [x] **2.1 Kamus Waktu Akademik SKS & Ruangan (`src/constants/slots.ts`, `src/constants/rooms.ts`)**
   - Definisikan mapping slot `A` (07:30 - 08:30) sampai `O` (21:30 - 22:30).
-- [ ] **2.2 Slot Parsing & Continuity Validator (`src/utils/slot-parser.ts`)**
-  - Fungsi validasi alfabetik `A-O`.
-  - Fungsi validasi urutan kontigu/sekuensial (e.g., `DEF` ✅, `ADF` ❌).
-  - Pembatasan durasi maksimum (maksimal 3–4 SKS per pemesanan).
-- [ ] **2.3 Date & Room Parser (`src/utils/date.ts`, `src/constants/rooms.ts`)**
-  - Validasi format tanggal `DD/MM/YYYY` dan konversi ke ISO `YYYY-MM-DD`.
-  - Validasi kode ruangan yang terdaftar di SDP Undiksha (e.g., `RAK_4.1`).
+  - Definisikan kamus ruangan SDP Undiksha (`RAK_1.1` - `RAK_4.4`, `AUDITORIUM`).
+  - Dibuat immutable (`Object.freeze`), type-safe (`SlotCode`, `RoomCode`), dilengkapi type guard dan unit test.
+- [x] **2.2 Slot Parsing & Continuity Validator (`src/utils/slot-parser.ts`)**
+  - Fungsi validasi alfabetik `A-O` (`validateSlotCharacters`).
+  - Fungsi validasi urutan kontigu/sekuensial (e.g., `DEF` ✅, `ADF` ❌) (`validateSlotContinuity`).
+  - Pembatasan durasi pemesanan 1–4 SKS (`validateSlotLimit`).
+  - Parsing terintegrasi dengan Result Pattern (`parseSlotString`) & formatter rentang waktu (`formatSlotTimeRange`).
+- [x] **2.3 Date & Room Parser (`src/utils/date.ts`, `src/utils/room-parser.ts`)**
+  - Validasi format tanggal `DD/MM/YYYY`, kalender (kabisat/jumlah hari bulan), pencegahan tanggal lampau, dan konversi ke ISO `YYYY-MM-DD` (`parseDateString`, `isoToDateString`, `formatIndonesianDate`).
+  - Validasi dan normalisasi kode ruangan terdaftar SDP Undiksha (`parseRoomCode`).
 
 ---
 
