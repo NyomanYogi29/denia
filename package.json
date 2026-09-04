@@ -1,13 +1,17 @@
 {
   "name": "denia",
   "module": "index.ts",
+  "bin": {
+    "denia": "./src/cli/index.ts"
+  },
   "scripts": {
     "dev": "bun run src/index.ts",
     "dev:watch": "bun --watch run src/index.ts",
     "db:push": "bunx drizzle-kit push",
     "db:generate": "bunx drizzle-kit generate",
     "db:studio": "bunx drizzle-kit studio",
-    "test": "bun test"
+    "test": "bun test",
+    "cli": "bun run src/cli/index.ts"
   },
   "type": "module",
   "private": true,
