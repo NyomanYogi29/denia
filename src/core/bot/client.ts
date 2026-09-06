@@ -30,9 +30,9 @@ export const createBotClient = (options: BotClientOptions = {}): BotClient => {
   const resolvedAuthDir = options.authDir ?? config.whatsapp.authDir ?? './auth_info';
   const resolvedPhoneNumber = options.phoneNumber ?? config.whatsapp.botPhoneNumber;
 
-  // Default mode autentikasi adalah 'pairing' (Pairing Code) sesuai kebijakan sistem
+  // Default mode autentikasi adalah 'qr' (Terminal QR Code)
   const envAuthMode: AuthMode =
-    Bun.env.WA_AUTH_MODE?.toLowerCase() === 'qr' ? 'qr' : 'pairing';
+    Bun.env.WA_AUTH_MODE?.toLowerCase() === 'pairing' ? 'pairing' : 'qr';
   const resolvedAuthMode: AuthMode = options.authMode ?? envAuthMode;
 
   const autoReconnect = options.autoReconnect ?? true;
@@ -224,11 +224,17 @@ export const createBotClient = (options: BotClientOptions = {}): BotClient => {
 
       // Handle Pairing Code secara otomatis jika default mode 'pairing' dan belum terdaftar
       if (resolvedAuthMode === 'pairing' && !state.creds.registered) {
-        setTimeout(async () => {
-          if (currentSocket && !state.creds.registered && !isExplicitDisconnect) {
-            await requestPairingCode();
+        const attemptPairingCode = async (attempt = 1, maxAttempts = 3): Promise<void> => {
+          if (!currentSocket || state.creds.registered || isExplicitDisconnect) return;
+
+          const result = await requestPairingCode();
+          if (!result.success && attempt < maxAttempts && !state.creds.registered && !isExplicitDisconnect) {
+            log.warn(`Percobaan ke-${attempt} meminta pairing code belum berhasil. Mencoba lagi dalam 3 detik...`);
+            setTimeout(() => attemptPairingCode(attempt + 1, maxAttempts), 3000);
           }
-        }, 3000);
+        };
+
+        setTimeout(() => attemptPairingCode(), 3000);
       }
 
       return ok(sock);

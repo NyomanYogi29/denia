@@ -24,7 +24,7 @@ export interface BotClientOptions {
   readonly phoneNumber?: string;
 
   /**
-   * Metode autentikasi: 'pairing' untuk pairing code 8 digit atau 'qr' untuk terminal QR code (default: 'pairing')
+   * Metode autentikasi: 'qr' untuk terminal QR code atau 'pairing' untuk pairing code 8 digit (default: 'qr')
    */
   readonly authMode?: AuthMode;
 

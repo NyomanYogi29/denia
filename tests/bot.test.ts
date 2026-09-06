@@ -4,7 +4,7 @@ import { config } from '@/core/config';
 import { ErrorCode } from '@/core/errors';
 
 describe('WhatsApp Bot Client Module', () => {
-  it('should initialize bot client with default options (pairing code mode) and idle status', () => {
+  it('should initialize bot client with default options (qr code mode) and idle status', () => {
     const client = createBotClient();
 
     expect(client).toBeDefined();
@@ -14,16 +14,16 @@ describe('WhatsApp Bot Client Module', () => {
     const options = client.getOptions();
     expect(options.authDir).toBe(config.whatsapp.authDir);
     expect(options.phoneNumber).toBe(config.whatsapp.botPhoneNumber);
-    expect(options.authMode).toBe('pairing'); // Default adalah pairing code
+    expect(options.authMode).toBe('qr'); // Default adalah qr code
     expect(options.autoReconnect).toBe(true);
     expect(options.reconnectIntervalMs).toBe(3000);
   });
 
-  it('should accept custom configuration options and allow overriding to qr mode', () => {
+  it('should accept custom configuration options and allow overriding to pairing mode', () => {
     const client = createBotClient({
       authDir: './test_auth_dir',
       phoneNumber: '628999888777',
-      authMode: 'qr',
+      authMode: 'pairing',
       autoReconnect: false,
       maxReconnectAttempts: 5,
       reconnectIntervalMs: 5000,
@@ -32,7 +32,7 @@ describe('WhatsApp Bot Client Module', () => {
     const options = client.getOptions();
     expect(options.authDir).toBe('./test_auth_dir');
     expect(options.phoneNumber).toBe('628999888777');
-    expect(options.authMode).toBe('qr');
+    expect(options.authMode).toBe('pairing');
     expect(options.autoReconnect).toBe(false);
     expect(options.maxReconnectAttempts).toBe(5);
     expect(options.reconnectIntervalMs).toBe(5000);
