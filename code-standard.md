@@ -6,12 +6,12 @@ Dokumen ini merangkum arsitektur direktori, pola desain, konvensi penulisan kode
 
 ## 1. Arsitektur Direktori Utama (`src/`)
 
-Struktur kode utama di dalam `src/` dibagi menjadi dua domain tingkat atas yang terisolasi dan sejajar:
+Struktur kode utama di dalam `src/` dibagi menjadi dua domain terisolasi dan sejajar:
 
 ```
 src/
 ├── core/             # Fondasi sistem, domain bot WhatsApp, dan infrastruktur utama
-│   ├── config/       # Environment variables loader & validator
+│   ├── config/       # Environment variables loader & validator (Object.freeze)
 │   ├── constants/    # Kamus domain statis (slots SKS, ruangan SDP, dll.)
 │   ├── db/           # Skema Drizzle ORM, migrasi, dan client database SQLite
 │   ├── errors/       # AppError hierarchy, error codes, dan error resolver
@@ -29,162 +29,145 @@ src/
 
 ### Prinsip Pemisahan Domain:
 1. **`src/core/` (Bot & Domain Engine)**:
-   - Menangani siklus hidup runtime bot WhatsApp Baileys, persistensi database, validasi domain, dan sinkronisasi Google Sheets.
-   - Tidak boleh bergantung (*no dependency*) pada modul `src/cli/`.
-
+   - Menangani siklus hidup bot Baileys, database, validasi domain, dan sync Google Sheets.
+   - Dilarang memiliki dependensi (*no dependency*) ke modul `src/cli/`.
 2. **`src/cli/` (Developer & Admin Tooling)**:
-   - Terisolasi untuk interaksi terminal/developer (misal: registrasi awal whitelist pengguna, seeding, database inspection, force intervention via CLI).
-   - Diizinkan mengimpor dan memanfaatkan modul-modul dari `@/core/*` (seperti database `@/core/db`, logger `@/core/logger`, error handling `@/core/errors`, dan utilitas `@/core/utils`).
+   - Terisolasi untuk interaksi terminal (registrasi whitelist, inspeksi, dan database seed).
+   - Diizinkan mengimpor modul `@/core/*` (database, logger, error handling, utilitas).
 
 ---
 
 ## 2. Struktur Modul & Barrel Export
 
-Setiap modul di dalam `src/core/<module>/` dan subfitur di `src/cli/<feature>/` memiliki tanggung jawab tunggal dan wajib menyediakan barrel export `index.ts`:
+Setiap modul di `src/core/<module>/` dan subfitur di `src/cli/<feature>/` wajib menyediakan barrel export `index.ts`:
 
-```
-src/core/<module>/
-├── <feature>.ts      # Logika domain / implementasi
-├── types.ts          # Definisi interface & type khusus modul (opsional jika ringkas)
-└── index.ts          # Re-export publik API (fungsi, kelas, tipe, konstanta)
-```
-
-### Aturan Import & Export:
-- Re-export tipe wajib menggunakan kata kunci `type` (`export type { ... }` atau `export { type Foo }`).
-- File internal di dalam modul yang sama saling mengimpor menggunakan relative path berekstensi `.ts` (`./types.ts`).
+- Re-export tipe wajib menggunakan kata kunci `type` (`export type { ... }`).
+- File internal di modul yang sama saling mengimpor menggunakan relative path bertanda ekstensi `.ts` (`./types.ts`).
 - Konsumen di luar modul mengimpor via path alias `@/core/<module>` atau `@/cli/<feature>`.
 
 ---
 
 ## 3. Konvensi Bahasa & TypeScript
 
-1. **Runtime Native Bun**:
-   - Prioritaskan API native Bun bila tersedia (`Bun.env`, `Bun.file()`, `bun:sqlite`, `bun:test`).
-2. **Immutability**:
-   - Objek konfigurasi, kamus domain, dan konstanta wajib dibekukan dengan `Object.freeze()`.
-   - Gunakan modifier `readonly` pada properti class/interface dan `readonly T[]` untuk list statis.
-3. **Type-Safety & Explicit Types**:
-   - Hindari penggunaan `any` tanpa alasan mendesak; gunakan `unknown` atau generic parameter.
-   - Pisahkan import type secara eksplisit: `import type { ... } from '...'`.
+1. **Runtime Native Bun**: Prioritaskan API native Bun (`Bun.env`, `Bun.file()`, `bun:sqlite`, `bun:test`).
+2. **Immutability**: Objek konfigurasi, kamus domain, dan konstanta wajib dibekukan dengan `Object.freeze()`. Gunakan modifier `readonly` pada properti interface/class dan array statis.
+3. **Type-Safety**: Hindari penggunaan `any`. Gunakan `unknown` atau parameter generic, serta pisahkan type import secara eksplisit: `import type { ... } from '...'`.
 
 ---
 
-## 4. Standarisasi Error Handling & Result Pattern
+## 4. Standarisasi Result Pattern (`src/core/types/result.ts`)
 
-### A. Domain Error (`src/core/errors/`)
-- Seluruh custom error diturunkan dari `AppError` (`src/core/errors/app-error.ts`).
-- Gunakan error code terpusat dari `ErrorCode` (`src/core/errors/codes.ts`).
-- Tangani mapping error pihak ketiga (seperti SQLite constraint) melalui `resolveError()` (`src/core/errors/resolver.ts`).
+Seluruh fungsi/metode domain yang dapat mengalami kegagalan (seperti parsing, validasi, query DB, koneksi socket, dan command handler) **wajib** menggunakan Result Pattern:
 
-### B. Result Pattern (`src/core/types/`)
-- Gunakan `Result<T, E = AppError>` untuk fungsi yang dapat mengembalikan kegagalan yang dapat diprediksi:
+- Tipe kontrak: `Result<T, E = AppError> = Ok<T> | Err<E>` (di mana `Ok<T> = { success: true, data: T }` dan `Err<E> = { success: false, error: E }`).
+- Gunakan helper function `ok<T>(data)` untuk membungkus hasil sukses dan `err<E>(error)` untuk kegagalan.
+- **Dilarang melempar uncaught throw** pada alur bisnis aplikasi. Tangkap exception tak terduga dengan `try-catch` dan bungkus menjadi `err(new AppError(...))`.
 
 ```typescript
 import { ok, err, type Result } from '@/core/types';
 import { ValidationError, ErrorCode } from '@/core/errors';
 
-function parseInput(input: string): Result<string> {
+export function parseRoomInput(input: string): Result<string> {
   if (!input.trim()) {
-    return err(new ValidationError(ErrorCode.INVALID_COMMAND_SYNTAX, 'Input tidak boleh kosong'));
+    return err(new ValidationError(ErrorCode.INVALID_COMMAND_SYNTAX, 'Kode ruangan tidak boleh kosong'));
   }
-  return ok(input.trim());
+  return ok(input.trim().toUpperCase());
 }
 ```
 
 ---
 
-## 5. Standarisasi Logging (`src/core/logger/`)
+## 5. Standarisasi Error Handling & Hierarchy (`src/core/errors/`)
 
-- Jangan gunakan `console.log` langsung pada alur aplikasi runtime bot.
-- Gunakan child logger per modul untuk melacak konteks eksekusi:
-
-```typescript
-import { logger } from '@/core/logger';
-
-const moduleLogger = logger.child({ module: 'BOOKING_SERVICE' });
-
-moduleLogger.info('Memproses booking baru', { userId: '123' });
-moduleLogger.success('Booking berhasil dicatat', { bookingId: 45 });
-moduleLogger.error('Gagal mencatat booking', error, { payload });
-```
-
-*(Catatan khusus CLI: Script interaktif di `src/cli/` diperbolehkan mencetak format teks terminal terstruktur untuk kenyamanan interaksi pengguna).*
+1. **Error Code Terpusat**: Seluruh identifikasi error wajib merujuk pada konstanta `ErrorCode` di `src/core/errors/codes.ts`.
+2. **Hierarki AppError**: Seluruh custom error aplikasi diturunkan dari base class `AppError` (`src/core/errors/app-error.ts`) yang memuat properti `code`, `userMessage`, `metadata`, dan `cause`.
+   - `UnauthorizedError`: Akses ditolak atau nomor pengirim belum terdaftar whitelist.
+   - `SlotConflictError`: Bentrok peminjaman ruangan atau ruangan diblokir agenda kampus.
+   - `ValidationError`: Kegagalan sintaks, format tanggal, urutan slot, atau batas durasi SKS.
+   - `NotFoundError`: Data ruangan atau entitas peminjaman tidak ditemukan.
+3. **Error Resolver (`src/core/errors/resolver.ts`)**: Gunakan fungsi `resolveError(error)` untuk memetakan error eksternal (seperti SQLite constraint error) ke format terstruktur `ResolvedError` yang berisi pesan ramah untuk WhatsApp DM, kode error, saran pemecahan masalah, dan tingkat log yang sesuai.
 
 ---
 
-## 6. Standarisasi Database (`src/core/db/`)
+## 6. Standarisasi Logging Terpusat (`src/core/logger/`)
 
-- Model tabel didefinisikan secara deklaratif di `src/core/db/schema.ts` menggunakan Drizzle ORM.
-- Eksekusi SQLite berjalan dengan mode `WAL` dan `foreign_keys = ON` melalui `src/core/db/index.ts`.
+1. **Larangan `console.log`**: Dilarang keras menggunakan `console.log` atau `console.error` pada alur aplikasi bot (`src/core/`). Gunakan `AppLogger`.
+2. **Scoped Child Logger**: Setiap file/layanan wajib menginisialisasi child logger dengan modul yang jelas:
+   ```typescript
+   import { logger } from '@/core/logger';
+   const log = logger.child({ module: 'WHATSAPP_CLIENT' });
+   ```
+3. **Metode Logging Standar**:
+   - `log.info(message, meta)`: Informasi tahapan proses normal.
+   - `log.success(message, meta)`: Informasi keberhasilan transaksi/koneksi.
+   - `log.warn(message, meta)`: Peringatan kondisi tidak fatal (retry, slot jumping).
+   - `log.error(message, error, meta)`: Penanganan error (otomatis mengekstrak stack trace dan error details).
+   - `log.debug(message, meta)`: Log verbose untuk debugging internal.
+4. **Pengecualian CLI**: Script terminal interaktif di `src/cli/` diizinkan menggunakan format print teks konsol untuk kenyamanan interaksi pengguna.
+
+---
+
+## 7. Standarisasi Bot WhatsApp & Baileys (`src/core/bot/`)
+
+1. **Result Pattern pada Client**: Method koneksi dan operasi socket (`connect()`, `disconnect()`, `requestPairingCode()`) wajib mengembalikan `Promise<Result<T, AppError>>`.
+2. **Default Autentikasi Pairing Code**:
+   - Mode autentikasi default adalah **Pairing Code** (`authMode: 'pairing'`) menggunakan nomor bot (`config.whatsapp.botPhoneNumber`).
+   - Mode terminal QR Code (`'qr'`) tetap didukung sebagai opsi konfigurasi eksplisit.
+3. **Ketahanan Koneksi (Auto-Reconnect)**: Client wajib menangani reconnect otomatis untuk disconnect sementara (`restartRequired`, `timedOut`), menghentikan rekoneksi saat `loggedOut`, serta mempertahankan persistent event listeners lintas siklus koneksi.
+
+---
+
+## 8. Standarisasi Database (`src/core/db/`)
+
+- Skema tabel didefinisikan secara deklaratif di `src/core/db/schema.ts` menggunakan Drizzle ORM.
+- Eksekusi database SQLite berjalan dengan mode `WAL` dan `PRAGMA foreign_keys = ON`.
 - Re-export schema dan instance `db` terpusat melalui `src/core/db/index.ts`.
 
 ---
 
-## 7. Standarisasi Pengujian (`tests/`)
+## 9. Standarisasi Pengujian (`tests/`)
 
-### Aturan File Test:
-1. **1 Modul / Fitur = 1 File Test**:
-   - Modul core: `tests/<module>.test.ts` (contoh: `tests/constants.test.ts`, `tests/utils.test.ts`, `tests/db.test.ts`).
-   - Modul CLI: `tests/cli.test.ts` atau `tests/cli-<feature>.test.ts`.
-2. **Packing Test Cases**: Satukan seluruh skenario pengujian modul tersebut di dalam satu file test dengan blok `describe('<Module> Module', ...)`.
-3. Gunakan test runner native `bun:test` (`describe`, `it`, `expect`).
-
-```bash
-bun test                    # Menjalankan seluruh test suite
-bun test tests/utils.test.ts # Menjalankan test spesifik
-```
+1. **1 Modul = 1 File Test**: Modul core diuji di `tests/<module>.test.ts`, modul CLI di `tests/cli.test.ts`.
+2. **Packing Test Cases**: Satukan seluruh skenario pengujian unit di blok `describe('<Module> Module', ...)`.
+3. **Runner Bun Test**: Gunakan `bun test` dengan runner native `describe`, `it`, `expect`.
 
 ---
 
-## 8. Boilerplate Templates
+## 10. Boilerplate Standar Layanan Core
 
-### A. Template Modul Baru di Core (`src/core/<module>/`)
-
-`src/core/<module>/service.ts`:
 ```typescript
 import { ok, err, type Result } from '@/core/types';
-import { AppError, ErrorCode } from '@/core/errors';
+import { AppError, ErrorCode, ValidationError } from '@/core/errors';
 import { logger } from '@/core/logger';
 
-const log = logger.child({ module: 'EXAMPLE_MODULE' });
+const log = logger.child({ module: 'EXAMPLE_SERVICE' });
 
 export interface ProcessInput {
   readonly id: string;
 }
 
-export function processItem(input: ProcessInput): Result<{ processed: boolean }> {
+export async function processItem(input: ProcessInput): Promise<Result<{ processed: boolean }>> {
   try {
+    if (!input.id.trim()) {
+      return err(new ValidationError(ErrorCode.INVALID_COMMAND_SYNTAX, 'ID tidak boleh kosong'));
+    }
+
     log.info('Memproses item', { id: input.id });
+    // Logika operasi...
+    log.success('Item berhasil diproses', { id: input.id });
+
     return ok({ processed: true });
   } catch (error) {
-    log.error('Gagal memproses item', error);
-    return err(new AppError({ code: ErrorCode.INTERNAL_ERROR, userMessage: 'Terjadi kegagalan sistem' }));
+    log.error('Gagal memproses item', error, { id: input.id });
+    return err(
+      error instanceof AppError
+        ? error
+        : new AppError({
+            code: ErrorCode.INTERNAL_ERROR,
+            userMessage: 'Terjadi kegagalan sistem saat memproses item',
+            cause: error,
+          })
+    );
   }
 }
-```
-
-`src/core/<module>/index.ts`:
-```typescript
-export { processItem, type ProcessInput } from './service.ts';
-```
-
-### B. Template File Test (`tests/<module>.test.ts`)
-
-```typescript
-import { describe, expect, it } from 'bun:test';
-import { processItem } from '@/core/example';
-
-describe('Example Module', () => {
-  it('should process item successfully', () => {
-    const res = processItem({ id: 'test-1' });
-    expect(res.success).toBe(true);
-    if (res.success) {
-      expect(res.data.processed).toBe(true);
-    }
-  });
-
-  it('should handle error cases gracefully', () => {
-    // Skenario kegagalan / edge cases
-  });
-});
 ```

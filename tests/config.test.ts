@@ -20,6 +20,8 @@ describe('Configuration Module', () => {
     expect(config.whatsapp.groupJid).toBeDefined();
     expect(Array.isArray(config.whatsapp.adminJids)).toBe(true);
     expect(config.whatsapp.adminJids.length).toBeGreaterThan(0);
+    expect(config.whatsapp.botPhoneNumber).toBeDefined();
+    expect(typeof config.whatsapp.botPhoneNumber).toBe('string');
   });
 
   it('should have valid google sheets configuration', () => {

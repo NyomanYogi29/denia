@@ -64,6 +64,7 @@ const bufferWindowSeconds = parseInt(getEnvOrDefault('BUFFER_WINDOW_SECONDS', '6
 const dbFileName = getEnvOrThrow('DB_FILE_NAME');
 const groupJid = getEnvOrThrow('GROUP_JID');
 const adminJidRaw = getEnvOrThrow('ADMIN_JID_LIST');
+const botPhoneNumber = getEnvOrThrow('BOT_PHONE_NUMBER');
 const googleSheetId = getEnvOrThrow('GOOGLE_SHEET_ID');
 const serviceAccountPath = Bun.env.GOOGLE_SERVICE_ACCOUNT_PATH?.trim() ?? null;
 
@@ -78,6 +79,7 @@ export const config: AppConfig = Object.freeze({
   whatsapp: Object.freeze({
     groupJid,
     adminJids: parseAdminJids(adminJidRaw),
+    botPhoneNumber,
     authDir: getEnvOrDefault('WA_AUTH_DIR', './auth_info'),
   }),
   google: Object.freeze({

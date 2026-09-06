@@ -60,9 +60,9 @@
 ---
 
 ### 🔹 Fase 3: Integrasi Baileys WhatsApp & State Management
-- [ ] **3.1 Connection Manager (`src/core/bot/client.ts`)**
+- [x] **3.1 Connection Manager (`src/core/bot/client.ts`)**
   - Integrasi `@whiskeysockets/baileys` dengan `useMultiFileAuthState` ke folder `auth_info/`.
-  - Tampilkan QR code terminal menggunakan `qrcode-terminal`.
+  - Tampilkan QR code terminal menggunakan `qrcode-terminal` dan dukungan opsi Pairing Code.
   - Implementasi auto-reconnect saat stream restart/disconnect.
 - [ ] **3.2 CLI Manajemen Pengguna & Registrasi Whitelist (`src/cli/`)**
   - CLI khusus (script interaktif / terminal tool) untuk mendaftarkan pengguna langsung ke tabel `users`.

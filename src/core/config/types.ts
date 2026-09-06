@@ -23,6 +23,7 @@ export interface AppConfig {
   readonly whatsapp: {
     readonly groupJid: string;
     readonly adminJids: readonly string[];
+    readonly botPhoneNumber: string;
     readonly authDir: string;
   };
   readonly google: {
