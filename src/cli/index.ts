@@ -2,7 +2,7 @@
 import { greet } from "@/core/cli-test"
 import { parseArgs } from "util"
 
-const { values, positionals } = parseArgs({
+const { values } = parseArgs({
     args: Bun.argv.slice(2),
     options: {
         name: {
