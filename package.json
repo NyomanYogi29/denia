@@ -4,7 +4,7 @@
   "bin": {
     "denia": "./src/cli/index.ts"
   },
-  "workspaces":["packages/*"],
+  "workspaces": ["packages/*"],
   "scripts": {
     "dev": "bun run src/index.ts",
     "dev:watch": "bun --watch run src/index.ts",
@@ -26,6 +26,7 @@
   "dependencies": {
     "@hapi/boom": "^10.0.1",
     "@whiskeysockets/baileys": "^7.0.0-rc14",
+    "chalk": "^6.0.0",
     "drizzle-orm": "^1.0.0-rc.4",
     "pino": "^10.3.1",
     "pino-pretty": "^13.1.3",
