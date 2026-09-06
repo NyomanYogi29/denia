@@ -12,9 +12,8 @@
     "ignoreDeprecations": "6.0",
 
     // Import Alias
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     },
 
     // Bundler mode
