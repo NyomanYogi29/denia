@@ -10,7 +10,11 @@ Struktur kode utama di dalam `src/` dibagi menjadi dua domain terisolasi dan sej
 
 ```
 src/
-├── core/             # Fondasi sistem, domain bot WhatsApp, dan infrastruktur utama
+├── bot/              # Baileys WhatsApp client, event handlers, router, dispatcher
+├── cli/              # Perangkat antarmuka baris perintah (Command-Line Interface)
+│   ├── commands/     # Perintah CLI spesifik (register whitelist korti/staf/admin)
+│   └── index.ts      # Entry point executable CLI runner
+├── core/             # Fondasi sistem, domain data, dan utilitas inti
 │   ├── config/       # Environment variables loader & validator (Object.freeze)
 │   ├── constants/    # Kamus domain statis (slots SKS, ruangan SDP, dll.)
 │   ├── db/           # Skema Drizzle ORM, migrasi, dan client database SQLite
@@ -19,21 +23,18 @@ src/
 │   ├── templates/    # Formatter pesan WhatsApp (rekap grup, japri/DM, reaction)
 │   ├── types/        # Result pattern (Result<T, E>), generic response types
 │   ├── utils/        # Core utility functions (slot-parser, date, room-parser)
-│   ├── bot/          # Baileys WhatsApp client, event handlers, router, dispatcher
 │   └── services/     # Layanan asynchronous (buffer service, sheets sync, dll.)
-├── cli/              # Perangkat antarmuka baris perintah (Command-Line Interface)
-│   ├── commands/     # Perintah CLI spesifik (register whitelist korti/staf/admin)
-│   └── index.ts      # Entry point executable CLI runner
 └── index.ts          # Entry point utama aplikasi runtime bot WhatsApp
 ```
 
 ### Prinsip Pemisahan Domain:
-1. **`src/core/` (Bot & Domain Engine)**:
-   - Menangani siklus hidup bot Baileys, database, validasi domain, dan sync Google Sheets.
-   - Dilarang memiliki dependensi (*no dependency*) ke modul `src/cli/`.
-2. **`src/cli/` (Developer & Admin Tooling)**:
+1. **`src/core/` (Domain Engine & Utilities)**:
+   - Fondasi bersama: database, logger, error handling, utilitas validasi, dan config.
+   - Tidak bergantung pada `src/cli/` maupun `src/bot/`.
+2. **`src/bot/` (WhatsApp Client & Command Engine)**:
+   - Menangani siklus hidup Baileys, event messages, command routing, dan response dispatcher.
+3. **`src/cli/` (Developer & Admin Tooling)**:
    - Terisolasi untuk interaksi terminal (registrasi whitelist, inspeksi, dan database seed).
-   - Diizinkan mengimpor modul `@/core/*` (database, logger, error handling, utilitas).
 
 ---
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { createBotClient } from '@/core/bot';
+import { createBotClient } from '@/bot';
 import { config } from '@/core/config';
 import { ErrorCode } from '@/core/errors';
 

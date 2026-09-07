@@ -1,4 +1,4 @@
-# 📋 Master Todo List: Bot WhatsApp "Denia"
+# Master Todo List: Bot WhatsApp "Denia"
 
 > Proyek: Sistem Booking Ruangan SDP Undiksha berbasis WhatsApp Bot (Bun + Baileys + SQLite/Drizzle + Google Sheets Mirror)
 
@@ -60,7 +60,7 @@
 ---
 
 ### 🔹 Fase 3: Integrasi Baileys WhatsApp & State Management
-- [x] **3.1 Connection Manager (`src/core/bot/client.ts`)**
+- [x] **3.1 Connection Manager (`src/bot/client.ts`)**
   - Integrasi `@whiskeysockets/baileys` dengan `useMultiFileAuthState` ke folder `auth_info/`.
   - Tampilkan QR code terminal menggunakan `qrcode-terminal` dan dukungan opsi Pairing Code.
   - Implementasi auto-reconnect saat stream restart/disconnect.
@@ -69,11 +69,11 @@
   - Mendukung pendaftaran role: `korti` (mahasiswa koordinator tingkat), `staff` (dosen/staf SDP), dan `admin` (developer).
   - Validasi format JID WhatsApp (`628xxx@s.whatsapp.net`), nama, NIM/NIP, kelas/unit, dan penetapan role.
   - Memudahkan inisialisasi whitelist pengguna tanpa harus melalui chat WhatsApp bot terlebih dahulu.
-- [ ] **3.3 Pesan Masuk & Router Handler (`src/core/bot/events.ts`)**
+- [ ] **3.3 Pesan Masuk & Router Handler (`src/bot/events.ts`)**
   - Filter prefix perintah tanda seru (`!`).
   - Ekstraksi JID pengirim asli (`message.key.participant || message.key.remoteJid`).
   - Kirim reaksi emoji instan `⏳` pada pesan yang sedang diproses.
-- [ ] **3.4 Response Dispatcher (`src/core/bot/responder.ts`)**
+- [ ] **3.4 Response Dispatcher (`src/bot/responder.ts`)**
   - Pengiriman pesan pribadi (*DM/Japri*) untuk notifikasi error/gagal agar tidak mengotori grup.
   - Pembaruan reaksi emoji (`✅` untuk berhasil, `❌` untuk gagal).
 

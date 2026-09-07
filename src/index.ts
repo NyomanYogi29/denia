@@ -1,7 +1,8 @@
-import { createBotClient } from '@/core/bot';
+import { createBotClient } from '@/bot';
 import { logger } from '@/core/logger';
 
 export * from './core';
+export * from './bot';
 
 const log = logger.child({ module: 'APP_ENTRYPOINT' });
 
