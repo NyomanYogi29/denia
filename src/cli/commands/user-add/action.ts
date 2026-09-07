@@ -1,8 +1,7 @@
-import { CliArgumentError, type CliError } from '@/cli/errors';
-import type { User } from '@/core/db';
+import { CliArgumentError, CliError } from '@/cli/errors';
+import { createUser, type User } from '@/core/db';
 import { err, ok, type Result } from '@/core/types';
-import { insertUser } from './repository.ts';
-import { userAddInputSchema, type UserAddRawInput } from './schema.ts';
+import { createUserInputSchema, type CreateUserRawInput } from '@/core/validators';
 import { promptUserAddInteractive, renderHeader, renderSuccess } from './ui.ts';
 
 export interface UserAddActionOptions {
@@ -12,16 +11,16 @@ export interface UserAddActionOptions {
 }
 
 /**
- * Controller / orchestrator CLI untuk alur pendaftaran pengguna baru
+ * Controller / orchestrator CLI untuk alur pendaftaran pengguna baru (V2)
  */
 export async function userAddAction(
-  rawInput: Partial<UserAddRawInput> = {},
+  rawInput: Partial<CreateUserRawInput> = {},
   options: UserAddActionOptions = {}
 ): Promise<Result<User, CliError>> {
-  let inputData: Partial<UserAddRawInput> = { ...rawInput };
+  let inputData: Partial<CreateUserRawInput> = { ...rawInput };
 
   const hasMissingRequired =
-    !inputData.jid || !inputData.nama || !inputData.nim || !inputData.kelas;
+    !inputData.jid || !inputData.nama || !inputData.kelas;
 
   // Jika opsi interaktif aktif atau input belum lengkap pada terminal interaktif (TTY)
   if (options.isInteractive || (hasMissingRequired && process.stdin.isTTY && !options.isQuiet)) {
@@ -31,25 +30,35 @@ export async function userAddAction(
     inputData = await promptUserAddInteractive(inputData);
   }
 
-  // Validasi input menggunakan Zod
-  const parsed = userAddInputSchema.safeParse(inputData);
+  // Validasi input menggunakan Core Zod Validator
+  const parsed = createUserInputSchema.safeParse(inputData);
   if (!parsed.success) {
     const firstIssue = parsed.error.issues[0];
     const errorMessage = firstIssue?.message ?? 'Validasi input gagal.';
     return err(
       new CliArgumentError(
         errorMessage,
-        'Periksa kembali argumen/flag yang Anda berikan (--jid, --nama, --nim, --kelas, --role).'
+        'Periksa kembali argumen/flag yang Anda berikan (--jid, --nama, --kelas, --fakultas, --prodi, --semester, --role).'
       )
     );
   }
 
   const validated = parsed.data;
 
-  // Eksekusi penyimpanan ke database via repository
-  const dbResult = await insertUser(validated);
+  // Eksekusi penyimpanan ke database via Core Repository
+  const dbResult = await createUser(validated);
   if (!dbResult.success) {
-    return err(dbResult.error);
+    const error = dbResult.error;
+    const hint = typeof error.metadata?.hint === 'string' ? error.metadata.hint : undefined;
+
+    return err(
+      new CliError({
+        code: error.code,
+        message: error.userMessage,
+        hint,
+        cause: error,
+      })
+    );
   }
 
   const inserted = dbResult.data;

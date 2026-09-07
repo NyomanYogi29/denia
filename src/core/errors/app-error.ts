@@ -83,3 +83,19 @@ export class NotFoundError extends AppError {
     this.name = 'NotFoundError';
   }
 }
+
+/**
+ * Error operasi basis data (SQLite constraint, kegagalan query)
+ */
+export class DatabaseError extends AppError {
+  constructor(userMessage: string, metadata?: Record<string, unknown>, cause?: unknown) {
+    super({
+      code: ErrorCode.DATABASE_ERROR,
+      userMessage,
+      metadata,
+      cause,
+    });
+    this.name = 'DatabaseError';
+  }
+}
+

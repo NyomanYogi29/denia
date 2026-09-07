@@ -11,13 +11,13 @@
 - [x] **1.2 Setup Environment Variables (`.env`) & Config Loader**
   - Menggunakan native `Bun.env`, functional parser (tanpa class), dan `Object.freeze`.
   - Type-safe config loader terisolasi di `src/core/config/`.
-- [ ] **1.3 Penyelarasan Skema Database Drizzle V2 (`src/core/db/schema.ts`)**
+- [x] **1.3 Penyelarasan Skema Database Drizzle V2 (`src/core/db/schema.ts`)**
   - Tambahkan tabel `rooms`: `code` (PK), `building`, `floor`, `room_name`, `capacity`, `is_active`.
   - Refactor tabel `users`: eliminasi `nim`, tambahkan `fakultas`, `prodi`, `semester`, `no_telp`.
   - Update tabel `bookings`: tambahkan `booking_type` (`regular`, `adhoc`, `institutional`), foreign key ke `rooms.code`.
   - Pertahankan indeks unik penangkal race condition: `UNIQUE(room_code, booking_date, slot_code, status)`.
-- [ ] **1.4 Migrasi Skema Database SQLite V2**
-  - Jalankan migrasi Drizzle untuk memperbarui skema lokal di `data/mydb.sqlite`.
+- [x] **1.4 Migrasi Skema Database SQLite V2**
+  - Jalankan migrasi Drizzle untuk memperbarui skema lokal di `data/mydb.sqlite` (dan `data/bot.db`).
   - Update database seeder master ruangan awal ke tabel `rooms`.
 
 ---

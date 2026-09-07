@@ -1,14 +1,11 @@
 import { describe, expect, it } from 'bun:test';
-import {
-  insertUser,
-  userAddAction,
-  userAddInputSchema,
-} from '@/cli/commands';
+import { userAddAction } from '@/cli/commands';
 import { isValidWhatsAppJid, normalizeToWhatsAppJid } from '@/cli/utils';
 import { db, users } from '@/core/db';
+import { createUserInputSchema } from '@/core/validators';
 import { eq } from 'drizzle-orm';
 
-describe('CLI User Add Module (Feature-Based)', () => {
+describe('CLI User Add Module (V2 Specification)', () => {
   describe('JID Normalizer & Validator (src/cli/utils/)', () => {
     it('should normalize local 08xxx number to 628xxx@s.whatsapp.net', () => {
       const jid = normalizeToWhatsAppJid('081234567890');
@@ -35,12 +32,11 @@ describe('CLI User Add Module (Feature-Based)', () => {
     });
   });
 
-  describe('Zod Input Schema (schema.ts)', () => {
-    it('should validate and parse valid user input successfully with default role', () => {
-      const parsed = userAddInputSchema.safeParse({
+  describe('Core Zod Input Schema (src/core/validators/)', () => {
+    it('should validate and parse valid user input successfully with default role and auto-derived noTelp', () => {
+      const parsed = createUserInputSchema.safeParse({
         jid: '081299998888',
         nama: 'Wayan Korti',
-        nim: '2115051088',
         kelas: 'PTI 4A',
       });
 
@@ -48,14 +44,36 @@ describe('CLI User Add Module (Feature-Based)', () => {
       if (parsed.success) {
         expect(parsed.data.jid).toBe('6281299998888@s.whatsapp.net');
         expect(parsed.data.nama).toBe('Wayan Korti');
-        expect(parsed.data.nim).toBe('2115051088');
         expect(parsed.data.kelas).toBe('PTI 4A');
+        expect(parsed.data.noTelp).toBe('6281299998888');
         expect(parsed.data.role).toBe('korti');
       }
     });
 
+    it('should parse optional academic fields (fakultas, prodi, semester)', () => {
+      const parsed = createUserInputSchema.safeParse({
+        jid: '081299998888',
+        nama: 'Wayan Korti',
+        fakultas: 'FTK',
+        prodi: 'PTI',
+        semester: '4',
+        kelas: 'PTI 4A',
+        noTelp: '081299998888',
+        role: 'staff',
+      });
+
+      expect(parsed.success).toBe(true);
+      if (parsed.success) {
+        expect(parsed.data.fakultas).toBe('FTK');
+        expect(parsed.data.prodi).toBe('PTI');
+        expect(parsed.data.semester).toBe(4);
+        expect(parsed.data.noTelp).toBe('081299998888');
+        expect(parsed.data.role).toBe('staff');
+      }
+    });
+
     it('should reject missing required fields with descriptive error messages', () => {
-      const parsed = userAddInputSchema.safeParse({
+      const parsed = createUserInputSchema.safeParse({
         jid: '',
         nama: 'A',
       });
@@ -64,10 +82,9 @@ describe('CLI User Add Module (Feature-Based)', () => {
     });
 
     it('should reject invalid role enum', () => {
-      const parsed = userAddInputSchema.safeParse({
+      const parsed = createUserInputSchema.safeParse({
         jid: '081299998888',
         nama: 'Wayan Korti',
-        nim: '2115051088',
         kelas: 'PTI 4A',
         role: 'superadmin',
       });
@@ -76,9 +93,8 @@ describe('CLI User Add Module (Feature-Based)', () => {
     });
   });
 
-  describe('Repository & Action (repository.ts & action.ts)', () => {
+  describe('CLI Action (action.ts)', () => {
     const testJid = '6289911223344@s.whatsapp.net';
-    const testNim = '9911223344';
 
     // Bersihkan data tes sebelum pengujian
     const cleanup = async () => {
@@ -92,7 +108,9 @@ describe('CLI User Add Module (Feature-Based)', () => {
         {
           jid: testJid,
           nama: 'Gede Test User',
-          nim: testNim,
+          fakultas: 'FTK',
+          prodi: 'PTI',
+          semester: 4,
           kelas: 'PTI 4C',
           role: 'korti',
         },
@@ -102,7 +120,12 @@ describe('CLI User Add Module (Feature-Based)', () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.jid).toBe(testJid);
-        expect(result.data.nim).toBe(testNim);
+        expect(result.data.nama).toBe('Gede Test User');
+        expect(result.data.fakultas).toBe('FTK');
+        expect(result.data.prodi).toBe('PTI');
+        expect(result.data.semester).toBe(4);
+        expect(result.data.kelas).toBe('PTI 4C');
+        expect(result.data.noTelp).toBe('6289911223344');
         expect(result.data.role).toBe('korti');
       }
     });
@@ -112,25 +135,6 @@ describe('CLI User Add Module (Feature-Based)', () => {
         {
           jid: testJid,
           nama: 'Duplicate JID User',
-          nim: '9999999999',
-          kelas: 'PTI 4C',
-          role: 'staff',
-        },
-        { isQuiet: true, isInteractive: false }
-      );
-
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.userMessage).toContain('sudah terdaftar');
-      }
-    });
-
-    it('should prevent duplicate NIM registration with informative error', async () => {
-      const result = await userAddAction(
-        {
-          jid: '6289900001111@s.whatsapp.net',
-          nama: 'Duplicate NIM User',
-          nim: testNim,
           kelas: 'PTI 4C',
           role: 'staff',
         },

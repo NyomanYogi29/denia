@@ -1,13 +1,14 @@
 import readline from 'node:readline/promises';
 import chalk from 'chalk';
 import type { User } from '@/core/db';
-import type { UserAddRawInput } from './schema.ts';
+import type { CreateUserRawInput } from '@/core/validators';
+
 
 /**
  * Menampilkan judul perintah pada terminal
  */
 export function renderHeader(): void {
-  console.log(chalk.bold.cyan('\n=== Pendaftaran Pengguna Whitelist Denia ===\n'));
+  console.log(chalk.bold.cyan('\n=== Pendaftaran Pengguna Whitelist Denia (V2) ===\n'));
 }
 
 /**
@@ -16,11 +17,14 @@ export function renderHeader(): void {
 export function renderSuccess(user: User): void {
   console.log(chalk.bold.green('\n[SUKSES] Pengguna berhasil didaftarkan ke whitelist database.'));
   console.log(chalk.gray('--------------------------------------------------'));
-  console.log(`${chalk.bold('JID   :')} ${chalk.white(user.jid)}`);
-  console.log(`${chalk.bold('Nama  :')} ${chalk.white(user.nama)}`);
-  console.log(`${chalk.bold('NIM   :')} ${chalk.white(user.nim)}`);
-  console.log(`${chalk.bold('Kelas :')} ${chalk.white(user.kelas)}`);
-  console.log(`${chalk.bold('Role  :')} ${chalk.cyan(user.role)}`);
+  console.log(`${chalk.bold('JID      :')} ${chalk.white(user.jid)}`);
+  console.log(`${chalk.bold('Nama     :')} ${chalk.white(user.nama)}`);
+  if (user.fakultas) console.log(`${chalk.bold('Fakultas :')} ${chalk.white(user.fakultas)}`);
+  if (user.prodi)    console.log(`${chalk.bold('Prodi    :')} ${chalk.white(user.prodi)}`);
+  if (user.semester) console.log(`${chalk.bold('Semester :')} ${chalk.white(user.semester)}`);
+  console.log(`${chalk.bold('Kelas    :')} ${chalk.white(user.kelas)}`);
+  console.log(`${chalk.bold('No Telp  :')} ${chalk.white(user.noTelp)}`);
+  console.log(`${chalk.bold('Role     :')} ${chalk.cyan(user.role)}`);
   console.log(chalk.gray('--------------------------------------------------\n'));
 }
 
@@ -39,8 +43,9 @@ export function renderError(message: string, hint?: string): void {
  * Melakukan prompt interaktif kepada pengguna untuk mengumpulkan data yang belum diisi
  */
 export async function promptUserAddInteractive(
-  initialValues: Partial<UserAddRawInput> = {}
-): Promise<UserAddRawInput> {
+  initialValues: Partial<CreateUserRawInput> = {}
+): Promise<CreateUserRawInput> {
+
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -57,13 +62,22 @@ export async function promptUserAddInteractive(
       initialValues.nama?.trim() ||
       (await rl.question(chalk.bold('Nama Lengkap: ')));
 
-    const nim =
-      initialValues.nim?.trim() ||
-      (await rl.question(chalk.bold('NIM / NIP: ')));
+    const fakultas =
+      initialValues.fakultas?.trim() ||
+      (await rl.question(chalk.bold('Fakultas (opsional, contoh: FTK, FBS): ')));
+
+    const prodi =
+      initialValues.prodi?.trim() ||
+      (await rl.question(chalk.bold('Program Studi (opsional, contoh: PTI, SI): ')));
+
+    const semesterInput =
+      initialValues.semester != null
+        ? String(initialValues.semester)
+        : await rl.question(chalk.bold('Semester (opsional, contoh: 4): '));
 
     const kelas =
       initialValues.kelas?.trim() ||
-      (await rl.question(chalk.bold('Kelas / Unit (contoh: PTI 4A, Staf SDP): ')));
+      (await rl.question(chalk.bold('Kelas / Unit (contoh: PTI 4A, 3DPS, Staf SDP): ')));
 
     let role = initialValues.role?.trim();
     if (!role) {
@@ -73,10 +87,14 @@ export async function promptUserAddInteractive(
       role = roleAnswer.trim() === '' ? 'korti' : roleAnswer.trim();
     }
 
+    const parsedSemester = semesterInput.trim() !== '' ? parseInt(semesterInput.trim(), 10) : undefined;
+
     return {
       jid: jid.trim(),
       nama: nama.trim(),
-      nim: nim.trim(),
+      fakultas: fakultas.trim() || undefined,
+      prodi: prodi.trim() || undefined,
+      semester: isNaN(parsedSemester as number) ? undefined : parsedSemester,
       kelas: kelas.trim(),
       role: (role as 'korti' | 'staff' | 'admin') || 'korti',
     };

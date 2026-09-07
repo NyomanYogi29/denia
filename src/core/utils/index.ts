@@ -28,3 +28,10 @@ export {
   parseRoomCode,
   type ParsedRoom,
 } from './room-parser.ts';
+
+export {
+  normalizeToWhatsAppJid,
+  isValidWhatsAppJid,
+  extractPhoneNumberFromJid,
+} from './jid.ts';
+

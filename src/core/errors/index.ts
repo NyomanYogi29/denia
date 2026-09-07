@@ -5,6 +5,8 @@ export {
   SlotConflictError,
   ValidationError,
   NotFoundError,
+  DatabaseError,
   type AppErrorOptions,
 } from './app-error.ts';
+
 export { resolveError, type ResolvedError } from './resolver.ts';

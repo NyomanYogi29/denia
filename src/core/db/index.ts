@@ -11,8 +11,10 @@ sqlite.exec('PRAGMA journal_mode = WAL;');
 sqlite.exec('PRAGMA foreign_keys = ON;');
 
 // Inisialisasi instance Drizzle ORM dengan relational query API
-export const db = drizzle({ client: sqlite });
+export const db = drizzle({ client: sqlite, relations: schema.relations });
 export { sqlite };
 
 // Re-export seluruh tabel, tipe, dan relasi
 export * from './schema.ts';
+export * from './repositories/index.ts';
+
