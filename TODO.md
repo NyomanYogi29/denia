@@ -59,12 +59,20 @@
   - Integrasi `@whiskeysockets/baileys` dengan `useMultiFileAuthState` ke folder `auth_info/`.
   - Tampilkan QR code terminal dan dukungan opsi Pairing Code.
   - Auto-reconnect saat stream restart/disconnect.
-- [ ] **3.2 Automated Seeder Korti dari Spreadsheet (`src/core/services/seeder.service.ts` & `src/cli/`)**
+- [x] **3.2 Automated Seeder Korti dari Spreadsheet (`src/core/services/seeder.service.ts` & `src/cli/`)**
   - Script membaca sheet `KORTI ` dari file master `RUANG KULIAH SDP DENPASAR.xlsx`.
   - Normalisasi nomor telepon menjadi WhatsApp JID (`628xxx@s.whatsapp.net`).
   - Upsert data ke tabel `users` (nama, fakultas, prodi, semester, kelas, no_telp, role).
   - CLI command: `denia seed korti` untuk eksekusi seeder dari terminal.
   - Penyesuaian `denia user add` agar selaras dengan skema pengguna baru tanpa NIM.
+- [x] **3.2.1 Danger Zone Maintenance Command (`denia flushdb`)**
+  - Implementasi perintah pembersihan darurat: `denia flushdb all`, `denia flushdb user`, `denia flushdb rooms`, `denia flushdb force_events`, `denia flushdb bookings`.
+  - Core flush service (`src/core/services/flush.service.ts`) dengan penanganan relasi cascade.
+  - Interactive danger confirmation prompt dan opsi bypass non-interaktif `--force` (`-f`).
+- [ ] **3.2.2 Security Guard & Master Password Enforcement untuk Danger Zone Commands**
+  - Setup konfigurasi security di `.env` (`DENIA_MASTER_PASSWORD` / hash aman).
+  - Validasi master password pada prompt terminal sebelum eksekusi perintah destruktif (`flushdb`).
+  - Proteksi lockout / rate limit terhadap kesalahan password berulang pada CLI.
 - [ ] **3.3 Pesan Masuk & Router Handler (`src/bot/events.ts`)**
   - Filter prefix perintah tanda seru (`!`).
   - Ekstraksi otomatis WhatsApp JID pengirim (`message.key.participant || message.key.remoteJid`).

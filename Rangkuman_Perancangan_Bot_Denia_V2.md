@@ -161,3 +161,28 @@ Aplikasi memisahkan antarmuka terminal (CLI) dan bot WhatsApp (Baileys) sebagai 
   * Perintah administrasi terminal untuk seeder, audit database, dan manajemen darurat.
 * **`src/bot/` (Adapter 2 - WhatsApp):**
   * Message handlers, tumbling window buffer rekap grup, dan emoji reaction dispatcher.
+
+---
+
+## 8. CLI Administration & Danger Zone Maintenance (`flushdb`)
+
+Sistem menyediakan antarmuka CLI sebagai *driving adapter* untuk kebutuhan operasional, seeder, dan pemeliharaan darurat basis data:
+
+1. **Perintah Whitelist & Seeder:**
+   * `denia user add`: Mendaftarkan korti/staf baru ke whitelist secara manual atau interaktif tanpa NIM.
+   * `denia seed korti`: Mengimpor dan menyinkronkan seluruh Korti dari sheet `KORTI ` file master spreadsheet (`--dry-run` untuk mode simulasi tanpa menulis ke database).
+
+2. **Perintah Danger Zone (`flushdb`):**
+   * Digunakan oleh administrator teknis untuk mereset atau membersihkan tabel tertentu pada database lokal SQLite:
+     * `denia flushdb all`: Mengosongkan seluruh tabel transaksi dan master (`bookings`, `force_events`, `users`, `rooms`).
+     * `denia flushdb user`: Mengosongkan data seluruh pengguna/korti terdaftar (beserta relasi transaksinya).
+     * `denia flushdb rooms`: Mengosongkan master data ruangan.
+     * `denia flushdb force_events`: Menghapus seluruh rekaman pemblokiran institusi.
+     * `denia flushdb bookings`: Menghapus seluruh transaksi peminjaman ruangan.
+   * **Mekanisme Guard:** Secara default, perintah memunculkan prompt konfirmasi interaktif berbahaya di terminal. Untuk eksekusi script / non-interaktif, wajib menyertakan flag `--force` (`-f`).
+
+3. **Roadmap Proteksi Keamanan: Master Password Enforcement:**
+   * Untuk mencegah eksekusi destruktif yang tidak disengaja (*accidental wipeout*) di lingkungan server/produksi, sistem dirancang untuk mendukung guard ganda berbasis **Master Password**:
+     * Konfigurasi `DENIA_MASTER_PASSWORD` pada file `.env` (disimpan dalam bentuk hash yang aman).
+     * Setiap pemanggilan perintah kategori *Danger Zone* (`flushdb`, reset lisensi, dsb.) akan mewajibkan verifikasi kata sandi master sebelum perintah dieksekusi.
+     * Proteksi pembatasan percobaan gagal (*lockout / rate-limiting*) untuk menangkal *brute-force* lokal.

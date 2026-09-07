@@ -6,7 +6,11 @@ import {
   GLOBAL_FLAG_OPTIONS,
 } from '@/cli/config';
 import {
+  executeFlushDb,
+  executeSeedKorti,
   executeUserAdd,
+  FLUSHDB_OPTIONS,
+  SEED_KORTI_OPTIONS,
   USER_ADD_OPTIONS,
 } from '@/cli/commands';
 import {
@@ -20,19 +24,24 @@ import {
 function printHelp(): void {
   console.log(chalk.bold.cyan('\n=== Denia CLI - Sistem Administrasi Bot WhatsApp ===\n'));
   console.log(chalk.bold('PENGGUNAAN:'));
-  console.log('  denia <command> [subcommand] [options]\n');
+  console.log('  denia <command> [subcommand/target] [options]\n');
   console.log(chalk.bold('PERINTAH YANG TERSEDIA:'));
-  console.log('  user add       Mendaftarkan pengguna baru (korti, staff, admin) ke whitelist');
-  console.log('  help           Menampilkan pesan bantuan ini\n');
+  console.log('  user add              Mendaftarkan pengguna baru (korti, staff, admin) ke whitelist');
+  console.log('  seed korti            Mengimpor data Korti dari master spreadsheet Excel ke database');
+  console.log(`  ${chalk.red('flushdb <target>')}      ${chalk.bold.red('[DANGER ZONE]')} Menghapus data tabel (all, user, rooms, force_events, bookings)`);
+  console.log('  help                  Menampilkan pesan bantuan ini\n');
   console.log(chalk.bold('OPSI GLOBAL:'));
-  console.log('  -v, --verbose  Tampilkan detail log lebih rinci');
-  console.log('  -q, --quiet    Sembunyikan output standar terminal');
-  console.log('      --json     Keluarkan hasil eksekusi dalam format JSON');
-  console.log('      --no-color Nonaktifkan pewarnaan terminal');
-  console.log('  -c, --config   Tentukan path custom berkas konfigurasi (.deniarc)\n');
+  console.log('  -v, --verbose         Tampilkan detail log lebih rinci');
+  console.log('  -q, --quiet           Sembunyikan output standar terminal');
+  console.log('      --json            Keluarkan hasil eksekusi dalam format JSON');
+  console.log('      --no-color        Nonaktifkan pewarnaan terminal');
+  console.log('  -c, --config          Tentukan path custom berkas konfigurasi (.deniarc)\n');
   console.log(chalk.bold('CONTOH:'));
-  console.log('  denia user add --jid 08123456789 --nama "Budi" --nim 2115051001 --kelas "PTI 4A"');
-  console.log('  denia user add -i\n');
+  console.log('  denia user add --jid 08123456789 --nama "Budi" --kelas "PTI 4A" --prodi "PTI"');
+  console.log('  denia seed korti');
+  console.log('  denia seed korti --dry-run');
+  console.log('  denia flushdb user');
+  console.log('  denia flushdb all --force\n');
 }
 
 /**
@@ -55,6 +64,8 @@ async function main(): Promise<void> {
   const combinedOptions = {
     ...GLOBAL_FLAG_OPTIONS,
     ...USER_ADD_OPTIONS,
+    ...SEED_KORTI_OPTIONS,
+    ...FLUSHDB_OPTIONS,
   };
 
   const { values, positionals } = parseArgs({
@@ -76,6 +87,23 @@ async function main(): Promise<void> {
 
   if ((firstPos === 'user' && secondPos === 'add') || firstPos === 'user:add') {
     const result = await executeUserAdd(values, runtimeConfig);
+    if (!result.success) {
+      handleCliError(result.error);
+    }
+    process.exit(0);
+  }
+
+  if ((firstPos === 'seed' && secondPos === 'korti') || firstPos === 'seed:korti') {
+    const result = await executeSeedKorti(values, runtimeConfig);
+    if (!result.success) {
+      handleCliError(result.error);
+    }
+    process.exit(0);
+  }
+
+  if (firstPos === 'flushdb' || firstPos?.startsWith('flushdb:')) {
+    const target = firstPos.includes(':') ? firstPos.split(':')[1] : secondPos;
+    const result = await executeFlushDb(values, runtimeConfig, target);
     if (!result.success) {
       handleCliError(result.error);
     }

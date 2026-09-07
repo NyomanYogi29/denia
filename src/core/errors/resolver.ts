@@ -131,6 +131,11 @@ const resolveAppError = (error: AppError): ResolvedError => {
       logLevel = 'warn';
       break;
 
+    case ErrorCode.RESOURCE_NOT_FOUND:
+      suggestion = 'Pastikan berkas atau sumber daya yang diminta tersedia pada lokasi yang ditentukan.';
+      logLevel = 'warn';
+      break;
+
     case ErrorCode.INVALID_COMMAND_SYNTAX:
       suggestion = 'Ketik `!help` atau `!info` untuk melihat petunjuk dan format sintaks perintah yang benar.';
       logLevel = 'warn';
