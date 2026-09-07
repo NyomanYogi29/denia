@@ -111,6 +111,11 @@ const resolveAppError = (error: AppError): ResolvedError => {
       logLevel = 'warn';
       break;
 
+    case ErrorCode.INVALID_BOOKING_LEAD_TIME:
+      suggestion = 'Pemesanan ruangan untuk Korti harus diajukan minimal H-1 sebelum hari pemakaian. Untuk kebutuhan mendesak pada hari H, silakan hubungi Staf SDP.';
+      logLevel = 'warn';
+      break;
+
     case ErrorCode.ROOM_NOT_FOUND:
       suggestion = 'Pastikan kode ruangan terdaftar di SDP Undiksha (Contoh: `RAK_4.1`).';
       logLevel = 'warn';

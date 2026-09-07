@@ -29,9 +29,12 @@ describe('Constants Module', () => {
       expect(Object.keys(SLOTS).length).toBe(15);
     });
 
-    it('should have contiguous 60-minute time intervals from 07:30 to 22:30', () => {
+    it('should have standard 50-minute time intervals (and 60-minute Ishoma) from 07:30 to 22:00', () => {
       expect(SLOTS.A.startTime).toBe('07:30');
-      expect(SLOTS.O.endTime).toBe('22:30');
+      expect(SLOTS.A.endTime).toBe('08:20');
+      expect(SLOTS.A.durationMinutes).toBe(50);
+      expect(SLOTS.H.durationMinutes).toBe(60);
+      expect(SLOTS.O.endTime).toBe('22:00');
 
       for (let i = 0; i < SLOT_CODES.length - 1; i++) {
         const currentCode = SLOT_CODES[i]!;
@@ -39,8 +42,6 @@ describe('Constants Module', () => {
         const currentSlot = SLOTS[currentCode];
         const nextSlot = SLOTS[nextCode];
 
-        // Ensure next slot starts right when the current slot ends
-        expect(nextSlot.startTime).toBe(currentSlot.endTime);
         expect(currentSlot.order + 1).toBe(nextSlot.order);
       }
     });
@@ -66,8 +67,10 @@ describe('Constants Module', () => {
       expect(slotD).toBeDefined();
       expect(slotD?.code).toBe('D');
       expect(slotD?.startTime).toBe('10:30');
-      expect(slotD?.endTime).toBe('11:30');
-      expect(slotD?.label).toBe('10:30 - 11:30');
+      expect(slotD?.endTime).toBe('11:20');
+      expect(slotD?.label).toBe('10:30 - 11:20');
+      expect(slotD?.durationMinutes).toBe(50);
+      expect(slotD?.description).toBe('SKS Siang 1');
 
       // Case-insensitive retrieval
       const slotDLower = getSlotInfo('d');
@@ -97,11 +100,13 @@ describe('Constants Module', () => {
       expect(rak41?.building).toBe('Gedung R.A. Kartini');
       expect(rak41?.floor).toBe(4);
       expect(rak41?.capacity).toBe(40);
+      expect(rak41?.isActive).toBe(true);
 
       // Ruangan berakhiran .4 berkapasitas maksimal 17 orang
       const smallRooms = ['RAK_1.4', 'RAK_2.4', 'RAK_3.4', 'RAK_4.4', 'KHD_2.4', 'KHD_3.4', 'KHD_4.4'];
       for (const code of smallRooms) {
         expect(ROOM_MAP[code]?.capacity).toBe(17);
+        expect(ROOM_MAP[code]?.isActive).toBe(true);
       }
     });
 
@@ -115,6 +120,7 @@ describe('Constants Module', () => {
       expect(khd22?.building).toBe('Gedung Ki Hadjar Dewantara');
       expect(khd22?.floor).toBe(2);
       expect(khd22?.capacity).toBe(40);
+      expect(khd22?.isActive).toBe(true);
 
       const hybrid = ROOM_MAP['HYBRID'];
       expect(hybrid).toBeDefined();
@@ -122,6 +128,12 @@ describe('Constants Module', () => {
       expect(hybrid?.building).toBe('Gedung Ki Hadjar Dewantara');
       expect(hybrid?.floor).toBe(1);
       expect(hybrid?.capacity).toBe(25);
+      expect(hybrid?.isActive).toBe(true);
+
+      // Alias KHD_HYBRID juga harus merujuk ke objek hybrid yang sama
+      const khdHybrid = ROOM_MAP['KHD_HYBRID'];
+      expect(khdHybrid).toBeDefined();
+      expect(khdHybrid).toEqual(hybrid);
     });
 
     it('should validate room codes accurately with isValidRoomCode (case-insensitive)', () => {
@@ -131,6 +143,8 @@ describe('Constants Module', () => {
       expect(isValidRoomCode('khd_3.4')).toBe(true);
       expect(isValidRoomCode('HYBRID')).toBe(true);
       expect(isValidRoomCode('hybrid')).toBe(true);
+      expect(isValidRoomCode('KHD_HYBRID')).toBe(true);
+      expect(isValidRoomCode('khd_hybrid')).toBe(true);
       expect(isValidRoomCode('AUDITORIUM')).toBe(true);
       expect(isValidRoomCode('auditorium')).toBe(true);
       expect(isValidRoomCode('ROOM_XYZ')).toBe(false);

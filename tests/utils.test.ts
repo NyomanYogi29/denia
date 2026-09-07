@@ -8,6 +8,8 @@ import {
   parseDateString,
   isoToDateString,
   formatIndonesianDate,
+  calculateLeadTimeDays,
+  validateBookingLeadTime,
   parseRoomCode,
 } from '@/core/utils';
 import { ErrorCode } from '@/core/errors';
@@ -123,9 +125,9 @@ describe('Utils Module', () => {
 
   describe('formatSlotTimeRange', () => {
     it('should format single slot and multi-slot time ranges correctly', () => {
-      expect(formatSlotTimeRange(['A'])).toBe('07:30 - 08:30');
-      expect(formatSlotTimeRange(['D', 'E', 'F'])).toBe('10:30 - 13:30');
-      expect(formatSlotTimeRange(['M', 'N', 'O'])).toBe('19:30 - 22:30');
+      expect(formatSlotTimeRange(['A'])).toBe('07:30 - 08:20');
+      expect(formatSlotTimeRange(['D', 'E', 'F'])).toBe('10:30 - 13:20');
+      expect(formatSlotTimeRange(['M', 'N', 'O'])).toBe('19:30 - 22:00');
       expect(formatSlotTimeRange([])).toBe('');
     });
   });
@@ -139,8 +141,8 @@ describe('Utils Module', () => {
         expect(res.data.slots).toEqual(['D', 'E', 'F']);
         expect(res.data.totalSks).toBe(3);
         expect(res.data.startTime).toBe('10:30');
-        expect(res.data.endTime).toBe('13:30');
-        expect(res.data.timeRange).toBe('10:30 - 13:30');
+        expect(res.data.endTime).toBe('13:20');
+        expect(res.data.timeRange).toBe('10:30 - 13:20');
 
         expect(Object.isFrozen(res.data)).toBe(true);
         expect(Object.isFrozen(res.data.slots)).toBe(true);
@@ -268,6 +270,97 @@ describe('Utils Module', () => {
       const formatted = formatIndonesianDate('2026-09-10');
       expect(formatted).toContain('September');
       expect(formatted).toContain('2026');
+    });
+  });
+
+  describe('Lead Time & H-1 Booking Rule Validator (Spesifikasi V2)', () => {
+    const fixedToday = new Date('2026-09-07T08:00:00+08:00'); // WITA: 2026-09-07
+
+    it('should calculate calendar lead time days accurately', () => {
+      // Same day (hari H)
+      expect(calculateLeadTimeDays('2026-09-07', { referenceDate: fixedToday })).toBe(0);
+
+      // Tomorrow (H-1)
+      expect(calculateLeadTimeDays('2026-09-08', { referenceDate: fixedToday })).toBe(1);
+
+      // 5 days ahead
+      expect(calculateLeadTimeDays('2026-09-12', { referenceDate: fixedToday })).toBe(5);
+
+      // Past day
+      expect(calculateLeadTimeDays('2026-09-06', { referenceDate: fixedToday })).toBe(-1);
+    });
+
+    it('should allow Korti to book rooms with minimum H-1 lead time (tomorrow or future dates)', () => {
+      // Besok (H-1)
+      const resTomorrow = validateBookingLeadTime('2026-09-08', 'korti', { referenceDate: fixedToday });
+      expect(resTomorrow.success).toBe(true);
+      if (resTomorrow.success) {
+        expect(resTomorrow.data.leadTimeDays).toBe(1);
+        expect(resTomorrow.data.isAllowed).toBe(true);
+        expect(resTomorrow.data.bookingIso).toBe('2026-09-08');
+      }
+
+      // DD/MM/YYYY format 1 bulan mendatang (edge case kuliah pengganti/ujian)
+      const resNextMonth = validateBookingLeadTime('07/10/2026', 'korti', { referenceDate: fixedToday });
+      expect(resNextMonth.success).toBe(true);
+      if (resNextMonth.success) {
+        expect(resNextMonth.data.leadTimeDays).toBe(30);
+        expect(resNextMonth.data.isAllowed).toBe(true);
+        expect(resNextMonth.data.bookingIso).toBe('2026-10-07');
+      }
+    });
+
+    it('should reject Korti booking on the same day (hari H) with INVALID_BOOKING_LEAD_TIME', () => {
+      const resSameDayIso = validateBookingLeadTime('2026-09-07', 'korti', { referenceDate: fixedToday });
+      expect(resSameDayIso.success).toBe(false);
+      if (!resSameDayIso.success) {
+        expect(resSameDayIso.error.code).toBe(ErrorCode.INVALID_BOOKING_LEAD_TIME);
+        expect(resSameDayIso.error.userMessage).toContain('minimal H-1');
+      }
+
+      const resSameDayDd = validateBookingLeadTime('07/09/2026', 'korti', { referenceDate: fixedToday });
+      expect(resSameDayDd.success).toBe(false);
+      if (!resSameDayDd.success) {
+        expect(resSameDayDd.error.code).toBe(ErrorCode.INVALID_BOOKING_LEAD_TIME);
+      }
+    });
+
+    it('should allow Staff and Admin to book on the same day (hari H)', () => {
+      const resStaff = validateBookingLeadTime('2026-09-07', 'staff', { referenceDate: fixedToday });
+      expect(resStaff.success).toBe(true);
+      if (resStaff.success) {
+        expect(resStaff.data.leadTimeDays).toBe(0);
+        expect(resStaff.data.isAllowed).toBe(true);
+      }
+
+      const resAdmin = validateBookingLeadTime('07/09/2026', 'admin', { referenceDate: fixedToday });
+      expect(resAdmin.success).toBe(true);
+      if (resAdmin.success) {
+        expect(resAdmin.data.leadTimeDays).toBe(0);
+        expect(resAdmin.data.isAllowed).toBe(true);
+      }
+    });
+
+    it('should reject booking for past dates with PAST_DATE_NOT_ALLOWED for all roles', () => {
+      const resPastKorti = validateBookingLeadTime('2026-09-06', 'korti', { referenceDate: fixedToday });
+      expect(resPastKorti.success).toBe(false);
+      if (!resPastKorti.success) {
+        expect(resPastKorti.error.code).toBe(ErrorCode.PAST_DATE_NOT_ALLOWED);
+      }
+
+      const resPastStaff = validateBookingLeadTime('05/09/2026', 'staff', { referenceDate: fixedToday });
+      expect(resPastStaff.success).toBe(false);
+      if (!resPastStaff.success) {
+        expect(resPastStaff.error.code).toBe(ErrorCode.PAST_DATE_NOT_ALLOWED);
+      }
+    });
+
+    it('should reject invalid date format with INVALID_DATE_FORMAT', () => {
+      const resInvalid = validateBookingLeadTime('not-a-date', 'korti', { referenceDate: fixedToday });
+      expect(resInvalid.success).toBe(false);
+      if (!resInvalid.success) {
+        expect(resInvalid.error.code).toBe(ErrorCode.INVALID_DATE_FORMAT);
+      }
     });
   });
 

@@ -16,8 +16,12 @@ export {
   isoToDateString,
   parseDateString,
   formatIndonesianDate,
+  calculateLeadTimeDays,
+  validateBookingLeadTime,
   type ParsedDate,
   type DateParseOptions,
+  type BookingLeadTimeResult,
+  type LeadTimeOptions,
 } from './date.ts';
 
 export {

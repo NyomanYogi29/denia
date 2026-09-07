@@ -174,3 +174,111 @@ export function formatIndonesianDate(iso: string): string {
     day: 'numeric',
   }).format(dateObj);
 }
+
+export interface BookingLeadTimeResult {
+  readonly bookingIso: string;
+  readonly todayIso: string;
+  readonly leadTimeDays: number;
+  readonly isAllowed: boolean;
+}
+
+export interface LeadTimeOptions {
+  readonly referenceDate?: Date;
+  readonly timeZone?: string;
+}
+
+/**
+ * Menghitung selisih hari kalender antara tanggal booking (ISO YYYY-MM-DD) dan hari ini di zona waktu WITA.
+ * - Nilai 0: Pemesanan untuk hari yang sama (hari H).
+ * - Nilai 1: Pemesanan H-1 (besok).
+ * - Nilai > 1: Pemesanan jauh-jauh hari (H-2, H-3, dst).
+ * - Nilai < 0: Tanggal di masa lampau.
+ */
+export function calculateLeadTimeDays(bookingIso: string, options?: LeadTimeOptions): number {
+  const timeZone = options?.timeZone ?? DEFAULT_TIMEZONE;
+  const referenceDate = options?.referenceDate ?? new Date();
+  const todayIso = getTodayIso(timeZone, referenceDate);
+
+  const [tYear, tMonth, tDay] = todayIso.split('-').map(Number);
+  const [bYear, bMonth, bDay] = bookingIso.split('-').map(Number);
+
+  if (!tYear || !tMonth || !tDay || !bYear || !bMonth || !bDay) {
+    return Number.NaN;
+  }
+
+  const todayUtc = Date.UTC(tYear, tMonth - 1, tDay);
+  const bookingUtc = Date.UTC(bYear, bMonth - 1, bDay);
+  const msPerDay = 24 * 60 * 60 * 1000;
+
+  return Math.round((bookingUtc - todayUtc) / msPerDay);
+}
+
+/**
+ * Memvalidasi aturan lead time peminjaman ruangan sesuai regulasi operasional V2:
+ * - Mahasiswa / Korti (role 'korti'): Wajib diajukan minimal H-1 sebelum hari pemakaian (leadTimeDays >= 1).
+ *   Pemesanan pada hari H (leadTimeDays === 0) ditolak dengan INVALID_BOOKING_LEAD_TIME.
+ * - Staf / Admin (role 'staff' | 'admin'): Diizinkan memesan pada hari H (leadTimeDays >= 0)
+ *   untuk mengakomodasi perkuliahan pengganti dosen atau force takeover mendadak.
+ * - Seluruh peran: Pemesanan untuk tanggal lampau (leadTimeDays < 0) ditolak dengan PAST_DATE_NOT_ALLOWED.
+ */
+export function validateBookingLeadTime(
+  bookingDateOrIso: string,
+  role: string = 'korti',
+  options?: LeadTimeOptions
+): Result<BookingLeadTimeResult> {
+  let bookingIso = bookingDateOrIso.trim();
+
+  // Jika input dalam format DD/MM/YYYY, konversikan ke ISO YYYY-MM-DD
+  if (DATE_REGEX.test(bookingIso)) {
+    const parseRes = parseDateString(bookingIso, { allowPast: true });
+    if (!parseRes.success) {
+      return parseRes;
+    }
+    bookingIso = parseRes.data.iso;
+  } else if (!ISO_DATE_REGEX.test(bookingIso)) {
+    return err(
+      new ValidationError(
+        ErrorCode.INVALID_DATE_FORMAT,
+        `Format tanggal "${bookingDateOrIso}" tidak valid. Gunakan format DD/MM/YYYY atau YYYY-MM-DD.`,
+        { raw: bookingDateOrIso }
+      )
+    );
+  }
+
+  const timeZone = options?.timeZone ?? DEFAULT_TIMEZONE;
+  const referenceDate = options?.referenceDate ?? new Date();
+  const todayIso = getTodayIso(timeZone, referenceDate);
+  const leadTimeDays = calculateLeadTimeDays(bookingIso, { timeZone, referenceDate });
+
+  if (leadTimeDays < 0) {
+    return err(
+      new ValidationError(
+        ErrorCode.PAST_DATE_NOT_ALLOWED,
+        `Tanggal booking (${bookingDateOrIso}) sudah berlalu. Pemesanan ruangan tidak dapat dilakukan untuk masa lampau.`,
+        { bookingIso, todayIso, leadTimeDays, role }
+      )
+    );
+  }
+
+  const isStaffOrAdmin = role === 'staff' || role === 'admin';
+
+  // Aturan H-1: Korti dilarang memesan pada hari H
+  if (leadTimeDays === 0 && !isStaffOrAdmin) {
+    return err(
+      new ValidationError(
+        ErrorCode.INVALID_BOOKING_LEAD_TIME,
+        'Peminjaman ruangan reguler oleh Korti wajib dilakukan minimal H-1 sebelum hari pemakaian (maksimal H-1 sebelum jadwal penggunaan).',
+        { bookingIso, todayIso, leadTimeDays, role }
+      )
+    );
+  }
+
+  const result: BookingLeadTimeResult = Object.freeze({
+    bookingIso,
+    todayIso,
+    leadTimeDays,
+    isAllowed: true,
+  });
+
+  return ok(result);
+}
