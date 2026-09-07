@@ -160,7 +160,7 @@ Aplikasi memisahkan antarmuka terminal (CLI) dan bot WhatsApp (Baileys) sebagai 
 * **`src/cli/` (Adapter 1 - Terminal):**
   * Perintah administrasi terminal untuk seeder, audit database, dan manajemen darurat.
 * **`src/bot/` (Adapter 2 - WhatsApp):**
-  * Message handlers, tumbling window buffer rekap grup, dan emoji reaction dispatcher.
+  * Message handlers, tumbling window buffer rekap grup (durasi interval 30 detik), dan emoji reaction dispatcher.
 
 ---
 

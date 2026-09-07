@@ -86,8 +86,8 @@
 
 ### 🔹 Fase 4: Micro-Batch Buffer Service (Pencegah Spam Grup)
 - [ ] **4.1 Tumbling Window Buffer (`src/core/services/buffer.service.ts`)**
-  - Implementasikan buffer penampung transaksi sukses dengan interval fixed window **60 detik**.
-  - Menggabungkan seluruh transaksi sukses selama 1 menit ke dalam **1 pesan rekap terstruktur** yang dikirim ke grup WhatsApp.
+  - Implementasikan buffer penampung transaksi sukses dengan interval fixed window **30 detik**.
+  - Menggabungkan seluruh transaksi sukses selama 30 detik ke dalam **1 pesan rekap terstruktur** yang dikirim ke grup WhatsApp.
   - Reset buffer setelah pesan rekap terkirim.
 
 ---

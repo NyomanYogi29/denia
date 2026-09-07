@@ -146,7 +146,7 @@ export function validateBookingLeadTime(bookingDate: string, role: string): Resu
 4. **UX WhatsApp Tanpa Spam Grup:**
    - **Reaksi Emoji Instan**: Bot segera bereaksi dengan emoji `⏳` saat memproses, `✅` jika valid dan masuk antrean buffer, atau `❌` jika ditolak.
    - **Notifikasi Error Jalur Pribadi (Japri/DM)**: Pesan error/penolakan dikirim via chat pribadi ke nomor pengirim agar tidak mengotori grup publik angkatan.
-   - **Tumbling Window 60 Detik**: Transaksi berhasil ditampung dalam jendela waktu 60 detik dan di-flush bersamaan dalam **satu pesan rekap terstruktur** ke grup WhatsApp.
+   - **Tumbling Window 30 Detik**: Transaksi berhasil ditampung dalam jendela waktu 30 detik dan di-flush bersamaan dalam **satu pesan rekap terstruktur** ke grup WhatsApp.
 
 ---
 
