@@ -1,4 +1,4 @@
-import { createBotClient } from '@/bot';
+import { createBotClient, createMessageRouter } from '@/bot';
 import { logger } from '@/core/logger';
 
 export * from './core';
@@ -10,6 +10,8 @@ async function bootstrap(): Promise<void> {
   log.info('Memulai runtime Bot WhatsApp Denia...');
 
   const client = createBotClient();
+  const router = createMessageRouter();
+  router.attachToClient(client);
 
   // Daftarkan handler shutdown graceful
   const shutdown = async (signal: string) => {

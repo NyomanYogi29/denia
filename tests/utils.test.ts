@@ -11,6 +11,11 @@ import {
   calculateLeadTimeDays,
   validateBookingLeadTime,
   parseRoomCode,
+  DEFAULT_COMMAND_PREFIX,
+  extractCommand,
+  hasCommandPrefix,
+  isCommandMessage,
+  parseCommand,
 } from '@/core/utils';
 import { ErrorCode } from '@/core/errors';
 
@@ -406,6 +411,169 @@ describe('Utils Module', () => {
       if (!res.success) {
         expect(res.error.code).toBe(ErrorCode.INVALID_COMMAND_SYNTAX);
       }
+    });
+  });
+
+  describe('Command Prefix Filter & Parser (src/core/utils/prefix.ts)', () => {
+    describe('hasCommandPrefix', () => {
+      it('should return true when text starts with default prefix "!"', () => {
+        expect(hasCommandPrefix('!pinjam RAK_2.1 10/09/2026 DEF')).toBe(true);
+        expect(hasCommandPrefix('!info')).toBe(true);
+        expect(hasCommandPrefix('!batal RAK_1.1 11/09/2026 AB')).toBe(true);
+        expect(hasCommandPrefix('!force RAK_2.1 10/09/2026 DEF Kuliah Pengganti')).toBe(true);
+      });
+
+      it('should handle leading whitespace correctly before prefix', () => {
+        expect(hasCommandPrefix('   !pinjam RAK_2.1')).toBe(true);
+        expect(hasCommandPrefix('\n\t!info')).toBe(true);
+      });
+
+      it('should return false when text does not start with prefix', () => {
+        expect(hasCommandPrefix('Halo bot')).toBe(false);
+        expect(hasCommandPrefix('pinjam RAK_2.1')).toBe(false);
+        expect(hasCommandPrefix('/pinjam')).toBe(false);
+        expect(hasCommandPrefix('.info')).toBe(false);
+      });
+
+      it('should return false for empty or non-string inputs', () => {
+        expect(hasCommandPrefix('')).toBe(false);
+        expect(hasCommandPrefix('   ')).toBe(false);
+        expect(hasCommandPrefix(null)).toBe(false);
+        expect(hasCommandPrefix(undefined)).toBe(false);
+      });
+
+      it('should support custom prefix when provided', () => {
+        expect(hasCommandPrefix('#pinjam', '#')).toBe(true);
+        expect(hasCommandPrefix('!pinjam', '#')).toBe(false);
+      });
+    });
+
+    describe('isCommandMessage', () => {
+      it('should return true for valid command strings with prefix and command name', () => {
+        expect(isCommandMessage('!pinjam RAK_2.1 10/09/2026 DEF')).toBe(true);
+        expect(isCommandMessage('!info')).toBe(true);
+        expect(isCommandMessage('!batal')).toBe(true);
+        expect(isCommandMessage('!force')).toBe(true);
+      });
+
+      it('should return false for isolated prefix character without command name', () => {
+        expect(isCommandMessage('!')).toBe(false);
+        expect(isCommandMessage('!   ')).toBe(false);
+        expect(isCommandMessage('  !  ')).toBe(false);
+      });
+
+      it('should return false for regular messages or empty inputs', () => {
+        expect(isCommandMessage('Halo Denia')).toBe(false);
+        expect(isCommandMessage('')).toBe(false);
+        expect(isCommandMessage(null)).toBe(false);
+        expect(isCommandMessage(undefined)).toBe(false);
+      });
+    });
+
+    describe('extractCommand', () => {
+      it('should extract command name and arguments into ParsedCommand object', () => {
+        const parsed = extractCommand('!pinjam RAK_2.1 10/09/2026 DEF');
+
+        expect(parsed).not.toBeNull();
+        expect(parsed?.prefix).toBe('!');
+        expect(parsed?.command).toBe('pinjam');
+        expect(parsed?.args).toEqual(['RAK_2.1', '10/09/2026', 'DEF']);
+        expect(parsed?.rawArgs).toBe('RAK_2.1 10/09/2026 DEF');
+        expect(parsed?.rawText).toBe('!pinjam RAK_2.1 10/09/2026 DEF');
+      });
+
+      it('should normalize command name to lowercase while preserving rawArgs case', () => {
+        const parsed = extractCommand('!PINJAM Rak_2.1 10/09/2026 def');
+
+        expect(parsed).not.toBeNull();
+        expect(parsed?.command).toBe('pinjam');
+        expect(parsed?.args[0]).toBe('Rak_2.1');
+        expect(parsed?.rawArgs).toBe('Rak_2.1 10/09/2026 def');
+      });
+
+      it('should handle commands without arguments (e.g. !info)', () => {
+        const parsed = extractCommand('!info');
+
+        expect(parsed).not.toBeNull();
+        expect(parsed?.command).toBe('info');
+        expect(parsed?.args).toEqual([]);
+        expect(parsed?.rawArgs).toBe('');
+      });
+
+      it('should handle multiple consecutive whitespace characters properly', () => {
+        const parsed = extractCommand('   !force   RAK_1.1    15/09/2026   DEF   Acara Kampus   ');
+
+        expect(parsed).not.toBeNull();
+        expect(parsed?.command).toBe('force');
+        expect(parsed?.args).toEqual(['RAK_1.1', '15/09/2026', 'DEF', 'Acara', 'Kampus']);
+        expect(parsed?.rawArgs).toBe('RAK_1.1    15/09/2026   DEF   Acara Kampus');
+      });
+
+      it('should return null for non-command strings', () => {
+        expect(extractCommand('Halo min')).toBeNull();
+        expect(extractCommand('!')).toBeNull();
+        expect(extractCommand('')).toBeNull();
+        expect(extractCommand(null)).toBeNull();
+      });
+
+      it('should return frozen immutable ParsedCommand object', () => {
+        const parsed = extractCommand('!pinjam RAK_2.1');
+        expect(parsed).not.toBeNull();
+        expect(Object.isFrozen(parsed)).toBe(true);
+        expect(Object.isFrozen(parsed?.args)).toBe(true);
+      });
+    });
+
+    describe('parseCommand (Result Pattern)', () => {
+      it('should return ok result for valid command string', () => {
+        const result = parseCommand('!pinjam RAK_2.1 10/09/2026 DEF');
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.prefix).toBe(DEFAULT_COMMAND_PREFIX);
+          expect(result.data.command).toBe('pinjam');
+          expect(result.data.args).toEqual(['RAK_2.1', '10/09/2026', 'DEF']);
+        }
+      });
+
+      it('should return Err with ValidationError when text is empty or whitespace', () => {
+        const result = parseCommand('');
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.error.code).toBe(ErrorCode.INVALID_COMMAND_SYNTAX);
+          expect(result.error.userMessage).toContain('tidak boleh kosong');
+        }
+
+        const whitespaceResult = parseCommand('   ');
+        expect(whitespaceResult.success).toBe(false);
+      });
+
+      it('should return Err with ValidationError when prefix is missing', () => {
+        const result = parseCommand('pinjam RAK_2.1');
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.error.code).toBe(ErrorCode.INVALID_COMMAND_SYNTAX);
+          expect(result.error.userMessage).toContain('harus diawali dengan prefix perintah "!"');
+        }
+      });
+
+      it('should return Err with ValidationError when text only contains prefix', () => {
+        const result = parseCommand('!');
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.error.code).toBe(ErrorCode.INVALID_COMMAND_SYNTAX);
+          expect(result.error.userMessage).toContain('Nama perintah tidak boleh kosong setelah prefix');
+        }
+      });
+
+      it('should support custom prefix in parseCommand', () => {
+        const result = parseCommand('#batal RAK_1.1', '#');
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.prefix).toBe('#');
+          expect(result.data.command).toBe('batal');
+        }
+      });
     });
   });
 });

@@ -73,12 +73,12 @@
   - Setup konfigurasi security di `.env` (`DENIA_MASTER_PASSWORD` / hash aman).
   - Validasi master password pada prompt terminal sebelum eksekusi perintah destruktif (`flushdb`).
   - Proteksi lockout / rate limit terhadap kesalahan password berulang pada CLI.
-- [ ] **3.3 Pesan Masuk & Router Handler (`src/bot/events.ts`)**
-  - Filter prefix perintah tanda seru (`!`).
+- [x] **3.3 Pesan Masuk & Router Handler (`src/bot/events.ts`)**
+  - Filter prefix perintah tanda seru (`!`) di `src/core/utils/prefix.ts`.
   - Ekstraksi otomatis WhatsApp JID pengirim (`message.key.participant || message.key.remoteJid`).
   - Auto-resolution identitas pengguna dari tabel `users`.
   - Kirim reaksi emoji instan `⏳` pada pesan yang sedang diproses.
-- [ ] **3.4 Response Dispatcher (`src/bot/responder.ts`)**
+- [x] **3.4 Response Dispatcher (`src/bot/responder.ts`)**
   - Pengiriman pesan pribadi (*DM/Japri*) untuk notifikasi error/penolakan.
   - Pembaruan reaksi emoji (`✅` untuk berhasil masuk buffer, `❌` untuk ditolak).
 

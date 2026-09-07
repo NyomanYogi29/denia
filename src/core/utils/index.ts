@@ -33,5 +33,16 @@ export {
   normalizeToWhatsAppJid,
   isValidWhatsAppJid,
   extractPhoneNumberFromJid,
+  extractSenderJid,
+  type MessageKeyLike,
 } from './jid.ts';
+
+export {
+  DEFAULT_COMMAND_PREFIX,
+  hasCommandPrefix,
+  isCommandMessage,
+  extractCommand,
+  parseCommand,
+  type ParsedCommand,
+} from './prefix.ts';
 
