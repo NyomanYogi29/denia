@@ -55,45 +55,50 @@ describe('Templates Module', () => {
       expect(result).toBe('');
     });
 
-    it('should format batch recap grouped by date with correct totals', () => {
+    it('should format single booking (N = 1) as a super compact one-liner', () => {
       const bookings: BatchBookingItem[] = [
         {
           date: '10/09/2026',
-          roomCode: 'RAK_4.1',
+          roomCode: 'RAK_2.1',
           slotCode: 'DEF',
-          slotTime: '09:30 - 12:30',
-          borrowerName: 'Gede Adi (Korti PTI 4A)',
-        },
-        {
-          date: '10/09/2026',
-          roomCode: 'LAB_KOMP_1',
-          slotCode: 'ABC',
-          borrowerName: 'Kadek Budi (Korti SI 2B)',
-        },
-        {
-          date: '11/09/2026',
-          roomCode: 'SEMINAR_A',
-          slotCode: 'GHI',
-          slotTime: '13:30 - 16:30',
-          borrowerName: 'Komang Ayu (BEM FTK)',
+          timeRange: '10:30 - 13:20',
+          borrowerName: 'Nyoman Yogi',
+          borrowerClass: '3DPS',
         },
       ];
 
-      const recap = formatBatchRecap({
-        bookings,
-        timestamp: '10/09/2026 10:00:00 WITA',
-      });
+      const recap = formatBatchRecap({ bookings });
 
-      expect(recap).toContain('📋 *REKAP PEMESANAN RUANGAN SDP UNDIKSHA*');
-      expect(recap).toContain('_Waktu Proses: 10/09/2026 10:00:00 WITA_');
-      expect(recap).toContain('📅 *Tanggal: 10/09/2026*');
-      expect(recap).toContain('📅 *Tanggal: 11/09/2026*');
-      expect(recap).toContain('• 🏢 *RAK_4.1* | Slot *DEF* (09:30 - 12:30)');
-      expect(recap).toContain('👤 Peminjam: Gede Adi (Korti PTI 4A)');
-      expect(recap).toContain('• 🏢 *LAB_KOMP_1* | Slot *ABC*');
-      expect(recap).toContain('• 🏢 *SEMINAR_A* | Slot *GHI* (13:30 - 16:30)');
-      expect(recap).toContain('✅ *Total Transaksi Dikonfirmasi*: 3');
-      expect(recap).toContain('!cekruangan [DD/MM/YYYY]');
+      expect(recap).toBe(
+        '📌 Ruang *RAK_2.1* digunakan oleh *3DPS*, pada jam *10:30 - 13:20* untuk tanggal *10/09/2026*.'
+      );
+    });
+
+    it('should format multiple bookings (N >= 2) as a compact numbered list', () => {
+      const bookings: BatchBookingItem[] = [
+        {
+          date: '10/09/2026',
+          roomCode: 'RAK_2.1',
+          slotCode: 'DEF',
+          timeRange: '10:30 - 13:20',
+          borrowerName: 'Nyoman Yogi',
+          borrowerClass: '3DPS',
+        },
+        {
+          date: '10/09/2026',
+          roomCode: 'KHD_HYBRID',
+          slotCode: 'ABC',
+          timeRange: '08:30 - 11:20',
+          borrowerName: 'Gede Adi',
+          borrowerClass: '5A',
+        },
+      ];
+
+      const recap = formatBatchRecap({ bookings });
+
+      expect(recap).toContain('📋 *Pemesanan Ruangan Terbaru:*');
+      expect(recap).toContain('1. Ruang *RAK_2.1* digunakan oleh *3DPS* (*10:30 - 13:20*, 10/09/2026)');
+      expect(recap).toContain('2. Ruang *KHD_HYBRID* digunakan oleh *5A* (*08:30 - 11:20*, 10/09/2026)');
     });
   });
 });

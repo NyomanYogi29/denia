@@ -85,10 +85,14 @@
 ---
 
 ### 🔹 Fase 4: Micro-Batch Buffer Service (Pencegah Spam Grup)
-- [ ] **4.1 Tumbling Window Buffer (`src/core/services/buffer.service.ts`)**
-  - Implementasikan buffer penampung transaksi sukses dengan interval fixed window **30 detik**.
-  - Menggabungkan seluruh transaksi sukses selama 30 detik ke dalam **1 pesan rekap terstruktur** yang dikirim ke grup WhatsApp.
-  - Reset buffer setelah pesan rekap terkirim.
+- [x] **4.1 Tumbling Window Buffer (`src/core/services/buffer.service.ts`)**
+  - Implementasikan buffer penampung transaksi sukses dengan interval fixed window **30 detik** terisolasi per grup JID.
+  - Format pesan adaptif super ringkas:
+    - Jika $N = 1$: One-liner (`📌 Ruang *RAK_2.1* digunakan oleh *3DPS*, pada jam *10:30 - 13:20* untuk tanggal *10/09/2026*.`).
+    - Jika $N \ge 2$: Daftar bernomor kompak (`📋 *Pemesanan Ruangan Terbaru:*`).
+  - Pemetaan rentang jam otomatis dari kamus slot SKS (misal `DEF` $\rightarrow$ `10:30 - 13:20`).
+  - Mekanisme perlindungan jaringan: hold/retry saat socket Baileys disconnect & auto-flush saat reconnect.
+  - Unit test komprehensif di `tests/buffer.test.ts`.
 
 ---
 
@@ -124,9 +128,11 @@
 - [ ] **6.1 Google Sheets Mirror Worker (`src/core/services/sheets.service.ts`)**
   - Background worker batch sync berkala untuk update template monitoring staf SDP.
   - Format penulisan sel seragam: `[Prodi]/[Kelas]/[Nama Dosen atau Korti]` (Contoh: `SI/3DPS/Ir. I Made Ardwi Pradnyana`).
-- [ ] **6.2 Cron Job Rekap Harian (`src/core/cron/daily-recap.ts`)**
-  - Eksekusi setiap pukul **07:00 pagi** setiap hari.
-  - Kirim rekap status seluruh ruangan untuk hari H dan H+1 ke grup utama.
+- [ ] **6.2 Cron Job Rekap Terjadwal (`src/core/cron/daily-recap.ts`)**
+  - Eksekusi terjadwal 2 kali sehari:
+    - **Pukul 07:00 WITA**: Rekapitulasi penuh pemakaian seluruh ruangan untuk **Hari Ini (Hari H)**.
+    - **Pukul 15:00 WITA**: Rekapitulasi status seluruh ruangan untuk **Besok (Hari H+1)** selaras batas operasional H-1 Korti.
+  - Kirim rekap status seluruh ruangan ke grup WhatsApp utama.
 
 ---
 
