@@ -1,6 +1,10 @@
-import { CliArgumentError, CliError } from '@/cli/errors';
-import { flushDatabase, type FlushResult, type FlushTarget } from '@/core/services';
-import { err, ok, type Result } from '@/core/types';
+import { CliArgumentError, CliError } from '@/cli/errors/index.ts';
+import {
+  flushDatabaseUseCase,
+  type FlushResult,
+  type FlushTarget,
+} from '@/core/features/maintenance/index.ts';
+import { err, ok, type Result } from '@/core/types/index.ts';
 import {
   promptFlushConfirmation,
   renderFlushAborted,
@@ -15,7 +19,7 @@ export interface FlushDbActionOptions {
 }
 
 /**
- * Controller eksekusi perintah danger zone `flushdb`
+ * Consumer CLI untuk eksekusi perintah danger zone `flushdb`
  */
 export async function flushDbAction(
   target: FlushTarget,
@@ -25,7 +29,7 @@ export async function flushDbAction(
     renderFlushHeader(target);
   }
 
-  // Jika bukan bypass (--force), minta konfirmasi
+  // Jika bukan bypass (--force), minta konfirmasi pada terminal TTY
   if (!options.force) {
     if (process.stdin.isTTY) {
       const confirmed = await promptFlushConfirmation(target);
@@ -47,7 +51,8 @@ export async function flushDbAction(
     }
   }
 
-  const result = await flushDatabase(target);
+  // Delegasikan eksekusi flush ke core feature use case
+  const result = await flushDatabaseUseCase(target);
   if (!result.success) {
     const error = result.error;
     return err(

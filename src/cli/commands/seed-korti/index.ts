@@ -1,8 +1,8 @@
 import type { ParseArgsOptionsConfig } from 'util';
-import type { CliRuntimeConfig } from '@/cli/config';
-import type { CliError } from '@/cli/errors';
-import type { SeedKortiSummary } from '@/core/services';
-import type { Result } from '@/core/types';
+import type { CliRuntimeConfig } from '@/cli/config/index.ts';
+import type { CliError } from '@/cli/errors/index.ts';
+import type { SeedKortiSummary } from '@/core/features/seeder/index.ts';
+import type { Result } from '@/core/types/index.ts';
 import { seedKortiAction, type SeedKortiActionOptions } from './action.ts';
 
 /**

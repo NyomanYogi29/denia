@@ -1,8 +1,12 @@
 import type { ParseArgsOptionsConfig } from 'util';
-import type { CliRuntimeConfig } from '@/cli/config';
-import { CliArgumentError, type CliError } from '@/cli/errors';
-import { normalizeFlushTarget, type FlushResult, type FlushTarget } from '@/core/services';
-import type { Result } from '@/core/types';
+import type { CliRuntimeConfig } from '@/cli/config/index.ts';
+import { CliArgumentError, type CliError } from '@/cli/errors/index.ts';
+import {
+  normalizeFlushTarget,
+  type FlushResult,
+  type FlushTarget,
+} from '@/core/features/maintenance/index.ts';
+import type { Result } from '@/core/types/index.ts';
 import { flushDbAction, type FlushDbActionOptions } from './action.ts';
 
 /**

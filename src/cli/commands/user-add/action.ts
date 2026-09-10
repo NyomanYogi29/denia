@@ -1,7 +1,8 @@
-import { CliArgumentError, CliError } from '@/cli/errors';
-import { createUser, type User } from '@/core/db';
-import { err, ok, type Result } from '@/core/types';
-import { createUserInputSchema, type CreateUserRawInput } from '@/core/validators';
+import { CliArgumentError, CliError } from '@/cli/errors/index.ts';
+import type { User } from '@/core/db/index.ts';
+import { createUserUseCase } from '@/core/features/user/index.ts';
+import { err, ok, type Result } from '@/core/types/index.ts';
+import type { CreateUserRawInput } from '@/core/validators/index.ts';
 import { promptUserAddInteractive, renderHeader, renderSuccess } from './ui.ts';
 
 export interface UserAddActionOptions {
@@ -11,7 +12,7 @@ export interface UserAddActionOptions {
 }
 
 /**
- * Controller / orchestrator CLI untuk alur pendaftaran pengguna baru (V2)
+ * Consumer CLI untuk alur pendaftaran pengguna baru (V2)
  */
 export async function userAddAction(
   rawInput: Partial<CreateUserRawInput> = {},
@@ -30,26 +31,20 @@ export async function userAddAction(
     inputData = await promptUserAddInteractive(inputData);
   }
 
-  // Validasi input menggunakan Core Zod Validator
-  const parsed = createUserInputSchema.safeParse(inputData);
-  if (!parsed.success) {
-    const firstIssue = parsed.error.issues[0];
-    const errorMessage = firstIssue?.message ?? 'Validasi input gagal.';
-    return err(
-      new CliArgumentError(
-        errorMessage,
-        'Periksa kembali argumen/flag yang Anda berikan (--jid, --nama, --kelas, --fakultas, --prodi, --semester, --role).'
-      )
-    );
-  }
-
-  const validated = parsed.data;
-
-  // Eksekusi penyimpanan ke database via Core Repository
-  const dbResult = await createUser(validated);
-  if (!dbResult.success) {
-    const error = dbResult.error;
+  // Delegasikan validasi & eksekusi use case ke core feature
+  const result = await createUserUseCase(inputData);
+  if (!result.success) {
+    const error = result.error;
     const hint = typeof error.metadata?.hint === 'string' ? error.metadata.hint : undefined;
+
+    if (error.code === 'INVALID_COMMAND_SYNTAX') {
+      return err(
+        new CliArgumentError(
+          error.userMessage,
+          hint ?? 'Periksa kembali argumen/flag yang Anda berikan (--jid, --nama, --kelas, --fakultas, --prodi, --semester, --role).'
+        )
+      );
+    }
 
     return err(
       new CliError({
@@ -61,7 +56,7 @@ export async function userAddAction(
     );
   }
 
-  const inserted = dbResult.data;
+  const inserted = result.data;
 
   // Render output terminal
   if (options.isJsonOutput) {

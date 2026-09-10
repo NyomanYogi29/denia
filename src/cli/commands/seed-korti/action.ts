@@ -1,6 +1,9 @@
-import { CliError } from '@/cli/errors';
-import { seedKortiFromSpreadsheet, type SeedKortiSummary } from '@/core/services';
-import { err, ok, type Result } from '@/core/types';
+import { CliError } from '@/cli/errors/index.ts';
+import {
+  seedKortiUseCase,
+  type SeedKortiSummary,
+} from '@/core/features/seeder/index.ts';
+import { err, ok, type Result } from '@/core/types/index.ts';
 import { renderSeedHeader, renderSeedSummary } from './ui.ts';
 
 export interface SeedKortiActionOptions {
@@ -11,7 +14,7 @@ export interface SeedKortiActionOptions {
 }
 
 /**
- * Controller / orchestrator CLI untuk perintah `seed korti`
+ * Consumer CLI untuk perintah `seed korti`
  */
 export async function seedKortiAction(
   options: SeedKortiActionOptions = {}
@@ -20,7 +23,7 @@ export async function seedKortiAction(
     renderSeedHeader();
   }
 
-  const result = await seedKortiFromSpreadsheet({
+  const result = await seedKortiUseCase({
     filePath: options.filePath,
     dryRun: options.dryRun,
   });
