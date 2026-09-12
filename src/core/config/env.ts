@@ -68,6 +68,10 @@ const botPhoneNumber = getEnvOrThrow('BOT_PHONE_NUMBER');
 const googleSheetId = getEnvOrThrow('GOOGLE_SHEET_ID');
 const serviceAccountPath = Bun.env.GOOGLE_SERVICE_ACCOUNT_PATH?.trim() ?? null;
 
+const redisUrl = getEnvOrDefault('REDIS_URL', 'redis://127.0.0.1:6379');
+const rateLimitMaxRequests = parseInt(getEnvOrDefault('RATE_LIMIT_MAX_REQUESTS', '7'), 10);
+const rateLimitWindowSeconds = parseInt(getEnvOrDefault('RATE_LIMIT_WINDOW_SECONDS', '60'), 10);
+
 export const config: AppConfig = Object.freeze({
   app: Object.freeze({
     env: nodeEnv,
@@ -86,5 +90,10 @@ export const config: AppConfig = Object.freeze({
     sheetId: googleSheetId,
     serviceAccountKey: serviceAccountKey ? Object.freeze(serviceAccountKey) : null,
     serviceAccountPath,
+  }),
+  redis: Object.freeze({
+    url: redisUrl,
+    rateLimitMaxRequests: isNaN(rateLimitMaxRequests) ? 7 : rateLimitMaxRequests,
+    rateLimitWindowSeconds: isNaN(rateLimitWindowSeconds) ? 60 : rateLimitWindowSeconds,
   }),
 });

@@ -115,8 +115,9 @@
 - [ ] **E.1 Persistensi Data & Manajemen Sesi Autentikasi Bot**
   - Masalah: Informasi booking ruangan dan korti yang terdaftar menghilang saat sesi autentikasi bot terputus/hilang, dan ketika relog via QR code data lama hilang.
   - Evaluasi: Investigasi persistensi SQLite vs folder auth Baileys, pastikan database tidak ter-reset/ter-flush saat sesi login ulang, dan kaji mekanisme rotasi sesi agar bot memiliki uptime tinggi.
-- [ ] **E.2 Rate Limiting Perintah Pengguna (Per-User Rate Limit)**
-  - Kebutuhan: Terapkan batas laju (rate limit) 7 perintah per menit per user untuk mencegah spamming dan overload perintah di WhatsApp bot.
+- [x] **E.2 Rate Limiting Perintah Pengguna (Per-User Rate Limit)**
+  - Status: *Sudah terimplementasi & teruji (Completed)*.
+  - Menerapkan pembatasan laju maksimal 7 perintah per 60 detik per pengguna (`JID`) menggunakan Bun native `RedisClient` (`redis.incr` + `redis.expire 60s`) dengan konfigurasi `REDIS_URL`, `RATE_LIMIT_MAX_REQUESTS`, dan `RATE_LIMIT_WINDOW_SECONDS`. Dikelola melalui singleton helper di `src/core/db/redis.ts` dan middleware di `src/core/middleware/rate-limiter.middleware.ts`. Menggunakan kebijakan *fail-open* (`enableOfflineQueue: false`) agar bot tetap beroperasi mulus saat Redis offline. Role `admin` dan `staff` otomatis dibebaskan dari rate limiting (*bypassed*). Pengguna yang terkena rate limit menerima reaksi `⏳` di grup dan pesan edukatif sisa waktu tunggu via DM/Japri.
 - [x] **E.3 Sinkronisasi Status Booking pada Tampilan Matriks `!info`**
   - Status: *Sudah terimplementasi & teruji (Completed)*.
   - Perintah `!info` tanpa parameter tanggal default menampilkan jadwal **Hari Ini**, dengan menyaring slot perkuliahan yang telah mulai/terlewat (`currentTime >= slot.startTime`) dari daftar slot kosong dan mencantumkan info jam terlewat di header, serta menyertakan tips `!info besok`. Perintah `!info besok` (dan variasinya dengan kode ruangan) otomatis menampilkan jadwal esok hari (H+1) sehingga booking aktif oleh Korti yang diajukan untuk besok langsung terlihat jelas.

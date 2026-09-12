@@ -18,4 +18,5 @@ export { sqlite };
 export * from './schema.ts';
 export * from './repositories/index.ts';
 export * from './seed-admin.ts';
+export * from './redis.ts';
 

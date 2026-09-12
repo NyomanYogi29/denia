@@ -31,4 +31,9 @@ export interface AppConfig {
     readonly serviceAccountKey: GoogleServiceAccountKey | null;
     readonly serviceAccountPath: string | null;
   };
+  readonly redis: {
+    readonly url: string;
+    readonly rateLimitMaxRequests: number;
+    readonly rateLimitWindowSeconds: number;
+  };
 }

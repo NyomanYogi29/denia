@@ -11,6 +11,7 @@ import {
   normalizeToWhatsAppJid,
   parseCommand,
 } from '@/core/utils';
+import { checkRateLimit } from '@/core/middleware';
 import type {
   BotClient,
   CommandHandler,
@@ -208,7 +209,40 @@ export function createMessageRouter(
         await options.onUnauthorizedUser(context, sock);
       }
 
-      // 10. Dispatching ke command handler yang terdaftar
+      // 10. Validasi Batas Laju (Rate Limiting) berbasis Redis (Bypass untuk Admin & Staf)
+      const isStaffOrAdmin = user?.role === 'admin' || user?.role === 'staff';
+      if (!isStaffOrAdmin) {
+        const rateLimit = await checkRateLimit(senderJid);
+        if (!rateLimit.allowed) {
+          log.warn(`Perintah "!${parsedCommand.command}" ditolak karena melewati batas laju: ${senderJid}`, {
+            senderJid,
+            currentCount: rateLimit.currentCount,
+            limit: rateLimit.limit,
+            resetInSeconds: rateLimit.resetInSeconds,
+          });
+
+          // Tetap pasang reaksi PROCESSING (⏳) pada pesan sumber
+          if (autoReact) {
+            await sendReaction(sock, msg.key, ReactionEmoji.PROCESSING);
+          }
+
+          // Kirim notifikasi peringatan edukatif via DM / Japri ke pengirim
+          const warningMessage =
+            `⚠️ *Batas Pengiriman Perintah Tercapai*\n\n` +
+            `Anda telah mencapai batas maksimum *${rateLimit.limit} perintah per menit*.\n` +
+            `Silakan tunggu *${rateLimit.resetInSeconds} detik* sebelum mengirim perintah berikutnya.`;
+
+          try {
+            await sock.sendMessage(senderJid, { text: warningMessage });
+          } catch (dmErr) {
+            log.warn('Gagal mengirim pesan peringatan rate limit via DM', { error: dmErr });
+          }
+
+          return ok(context);
+        }
+      }
+
+      // 11. Dispatching ke command handler yang terdaftar
       const handler = commandHandlers.get(parsedCommand.command);
       if (handler) {
         try {

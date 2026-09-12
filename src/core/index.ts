@@ -9,3 +9,4 @@ export * from './utils/index.ts';
 export * from './validators/index.ts';
 export * from './services/index.ts';
 export * from './features/index.ts';
+export * from './middleware/index.ts';
