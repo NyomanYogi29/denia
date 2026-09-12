@@ -225,4 +225,50 @@ describe('WhatsApp Bot Info Command Consumer (Fase 5.3 & Evaluasi E.4 - !info Ro
     expect(dmMessages.length).toBe(1);
     expect(dmMessages[0]!.content.text).toContain('Format tanggal');
   });
+
+  it('should process !info besok in group, react with 📩, and send tomorrow matrix to DM', async () => {
+    const router = registerDefaultBotCommands(createMessageRouter());
+    const mockSock = createMockSocket();
+
+    const msg = createMockMessage({
+      text: '!info besok',
+      senderJid: testSenderJid,
+      chatJid: testGroupJid,
+      isGroup: true,
+    });
+
+    await router.handleMessage(msg, mockSock);
+
+    // Reaksi 📩
+    const reactions = mockSock.sentMessages.filter((m) => m.content.react?.text);
+    expect(reactions[reactions.length - 1]!.content.react.text).toBe(ReactionEmoji.DM_SENT);
+
+    // DM menerima pesan berlabel 'Besok'
+    const dmMessages = mockSock.sentMessages.filter(
+      (m) => m.jid === testSenderJid && typeof m.content.text === 'string'
+    );
+    expect(dmMessages.length).toBe(1);
+    expect(dmMessages[0]!.content.text).toContain('Besok');
+  });
+
+  it('should process !info RAK_2.1 besok in group and send specific room for tomorrow to DM', async () => {
+    const router = registerDefaultBotCommands(createMessageRouter());
+    const mockSock = createMockSocket();
+
+    const msg = createMockMessage({
+      text: '!info RAK_2.1 besok',
+      senderJid: testSenderJid,
+      chatJid: testGroupJid,
+      isGroup: true,
+    });
+
+    await router.handleMessage(msg, mockSock);
+
+    const dmMessages = mockSock.sentMessages.filter(
+      (m) => m.jid === testSenderJid && typeof m.content.text === 'string'
+    );
+    expect(dmMessages.length).toBe(1);
+    expect(dmMessages[0]!.content.text).toContain('Besok');
+    expect(dmMessages[0]!.content.text).toContain('RAK_2.1');
+  });
 });

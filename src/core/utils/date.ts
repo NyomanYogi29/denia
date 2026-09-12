@@ -36,6 +36,36 @@ export function getTodayIso(timeZone = DEFAULT_TIMEZONE, referenceDate = new Dat
 }
 
 /**
+ * Mendapatkan tanggal besok dalam format ISO (YYYY-MM-DD) berdasarkan zona waktu WITA.
+ */
+export function getTomorrowIso(timeZone = DEFAULT_TIMEZONE, referenceDate = new Date()): string {
+  const tomorrow = new Date(referenceDate);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return getTodayIso(timeZone, tomorrow);
+}
+
+/**
+ * Mendapatkan jam dan menit saat ini dalam format HH:mm berdasarkan zona waktu WITA.
+ */
+export function getCurrentWitaTime(timeZone = DEFAULT_TIMEZONE, referenceDate = new Date()): {
+  readonly hours: number;
+  readonly minutes: number;
+  readonly timeStr: string;
+} {
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(referenceDate);
+  const hours = Number.parseInt(parts.find((p) => p.type === 'hour')?.value ?? '0', 10);
+  const minutes = Number.parseInt(parts.find((p) => p.type === 'minute')?.value ?? '0', 10);
+  const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  return Object.freeze({ hours, minutes, timeStr });
+}
+
+/**
  * Mengonversi tanggal ISO (YYYY-MM-DD) ke format tampilan bot (DD/MM/YYYY).
  */
 export function isoToDateString(iso: string): Result<string> {
@@ -59,6 +89,7 @@ export function isoToDateString(iso: string): Result<string> {
 
 /**
  * Memvalidasi dan melakukan parsing format tanggal DD/MM/YYYY ke format ISO YYYY-MM-DD.
+ * Mendukung kata kunci relatif seperti 'besok' / 'tomorrow' dan 'hari ini' / 'today'.
  * Memeriksa keabsahan kalender (termasuk tahun kabisat) serta memastikan bukan tanggal lampau.
  */
 export function parseDateString(raw: string, options?: DateParseOptions): Result<ParsedDate> {
@@ -71,6 +102,52 @@ export function parseDateString(raw: string, options?: DateParseOptions): Result
   }
 
   const trimmed = raw.trim();
+  const lower = trimmed.toLowerCase();
+
+  // Dukung kata kunci tanggal relatif
+  const allowRelative = options?.allowRelativeKeywords ?? true;
+  if (allowRelative) {
+    if (lower === 'besok' || lower === 'tomorrow') {
+      const timeZone = options?.timeZone ?? DEFAULT_TIMEZONE;
+      const refDate = options?.referenceDate ?? new Date();
+      const tomorrowIso = getTomorrowIso(timeZone, refDate);
+      const [yearStr, monthStr, dayStr] = tomorrowIso.split('-');
+      const day = Number.parseInt(dayStr!, 10);
+      const month = Number.parseInt(monthStr!, 10);
+      const year = Number.parseInt(yearStr!, 10);
+      const formatted = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+      return ok(
+        Object.freeze({
+          raw: formatted,
+          iso: tomorrowIso,
+          day,
+          month,
+          year,
+        })
+      );
+    }
+
+    if (lower === 'hari ini' || lower === 'today') {
+      const timeZone = options?.timeZone ?? DEFAULT_TIMEZONE;
+      const refDate = options?.referenceDate ?? new Date();
+      const todayIso = getTodayIso(timeZone, refDate);
+      const [yearStr, monthStr, dayStr] = todayIso.split('-');
+      const day = Number.parseInt(dayStr!, 10);
+      const month = Number.parseInt(monthStr!, 10);
+      const year = Number.parseInt(yearStr!, 10);
+      const formatted = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+      return ok(
+        Object.freeze({
+          raw: formatted,
+          iso: todayIso,
+          day,
+          month,
+          year,
+        })
+      );
+    }
+  }
+
   const match = DATE_REGEX.exec(trimmed);
 
   if (!match) {

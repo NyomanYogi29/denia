@@ -117,9 +117,9 @@
   - Evaluasi: Investigasi persistensi SQLite vs folder auth Baileys, pastikan database tidak ter-reset/ter-flush saat sesi login ulang, dan kaji mekanisme rotasi sesi agar bot memiliki uptime tinggi.
 - [ ] **E.2 Rate Limiting Perintah Pengguna (Per-User Rate Limit)**
   - Kebutuhan: Terapkan batas laju (rate limit) 7 perintah per menit per user untuk mencegah spamming dan overload perintah di WhatsApp bot.
-- [ ] **E.3 Sinkronisasi Status Booking pada Tampilan Matriks `!info`**
-  - Masalah: Ruangan berhasil dipinjam via `!pinjam`, namun saat `!info` dijalankan semua status ruangan masih tampil hijau (seolah belum ada yang dibooking).
-  - Evaluasi: Investigasi mapping slot/tanggal antara tabel `bookings` dan query ketersediaan di `availability.repository.ts`.
+- [x] **E.3 Sinkronisasi Status Booking pada Tampilan Matriks `!info`**
+  - Status: *Sudah terimplementasi & teruji (Completed)*.
+  - Perintah `!info` tanpa parameter tanggal default menampilkan jadwal **Hari Ini**, dengan menyaring slot perkuliahan yang telah mulai/terlewat (`currentTime >= slot.startTime`) dari daftar slot kosong dan mencantumkan info jam terlewat di header, serta menyertakan tips `!info besok`. Perintah `!info besok` (dan variasinya dengan kode ruangan) otomatis menampilkan jadwal esok hari (H+1) sehingga booking aktif oleh Korti yang diajukan untuk besok langsung terlihat jelas.
 - [x] **E.4 Routing Output Matriks `!info` ke Jalur Pribadi (DM)**
   - Status: *Sudah terimplementasi & teruji (Completed)*.
   - Seluruh pemanggilan perintah `!info` (baik umum maupun spesifik ruangan/tanggal) di dalam grup WhatsApp secara otomatis merouting pesan matriks ketersediaan lengkap ke DM pribadi pengguna (`senderJid`), dengan reaksi emoji `📩` (DM_SENT) pada pesan pemicu di grup tanpa mengirim balasan teks di grup. Jika dipanggil di DM langsung, bot merespons dengan reaksi `✅`. Apabila pengiriman DM gagal, bot memberi reaksi `❌` dan mengirim notifikasi fallback 1 baris di grup.

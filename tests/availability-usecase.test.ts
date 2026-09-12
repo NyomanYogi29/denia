@@ -151,4 +151,36 @@ describe('Get Room Availability Use Case (src/core/features/info/get-room-availa
 
     expect(result.error.code).toBe(ErrorCode.ROOM_NOT_FOUND);
   });
+
+  it('should support "besok" keyword to fetch tomorrow\'s schedule', async () => {
+    const result = await getRoomAvailabilityUseCase({
+      date: 'besok',
+      roomCode: testRoomCode,
+    });
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+
+    expect(result.data.matrixData.isTomorrow).toBe(true);
+    expect(result.data.formattedMessage).toContain('Besok');
+  });
+
+  it('should correctly calculate passed slots based on startTime', async () => {
+    const { getPassedSlots } = await import('@/core/utils');
+
+    // Sebelum jam 07:30, belum ada slot yang terlewat
+    expect(getPassedSlots('07:00')).toEqual([]);
+
+    // Jam 07:30 tepat, Slot A (07:30 - 08:20) sudah mulai
+    expect(getPassedSlots('07:30')).toEqual(['A']);
+
+    // Jam 10:30, Slot A, B, C, D sudah mulai
+    expect(getPassedSlots('10:30')).toEqual(['A', 'B', 'C', 'D']);
+
+    // Jam 15:00, Slot A sampai H (14:30 - 15:30) sudah mulai
+    expect(getPassedSlots('15:00')).toEqual(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']);
+
+    // Jam 22:30 (malam), seluruh slot A-O sudah terlewat
+    expect(getPassedSlots('22:30').length).toBe(15);
+  });
 });

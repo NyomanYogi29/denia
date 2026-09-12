@@ -11,7 +11,10 @@ import {
 import { err, ok, type Result } from '@/core/types';
 import {
   formatIndonesianDate,
+  getCurrentWitaTime,
+  getPassedSlots,
   getTodayIso,
+  getTomorrowIso,
   isoToDateString,
   parseDateString,
   parseRoomCode,
@@ -55,10 +58,16 @@ export async function getRoomAvailabilityUseCase(
 
   const validated = parsed.data;
 
-  // 2. Resolusi Tanggal
+  // 2. Resolusi Tanggal (Mendukung tanggal spesifik, 'besok', atau default hari ini)
   let date: ParsedDate;
+  const todayIso = getTodayIso();
+  const tomorrowIso = getTomorrowIso();
+  let isToday = false;
+  let isTomorrow = false;
+
   if (validated.date && validated.date.trim()) {
-    const dateResult = parseDateString(validated.date.trim(), { allowPast: true });
+    const rawTrimmed = validated.date.trim().toLowerCase();
+    const dateResult = parseDateString(rawTrimmed, { allowPast: true });
     if (!dateResult.success) {
       log.warn('Info ruangan ditolak: Format tanggal tidak valid', {
         date: validated.date,
@@ -67,9 +76,13 @@ export async function getRoomAvailabilityUseCase(
       return dateResult;
     }
     date = dateResult.data;
+    if (date.iso === tomorrowIso) {
+      isTomorrow = true;
+    } else if (date.iso === todayIso) {
+      isToday = true;
+    }
   } else {
     // Default ke hari ini (WITA)
-    const todayIso = getTodayIso();
     const todayFormatted = isoToDateString(todayIso);
     if (!todayFormatted.success) {
       return err(todayFormatted.error);
@@ -79,7 +92,12 @@ export async function getRoomAvailabilityUseCase(
       return err(todayDateResult.error);
     }
     date = todayDateResult.data;
+    isToday = true;
   }
+
+  // Jika mengecek jadwal hari ini, hitung slot-slot yang telah mulai/terlewat berdasarkan jam WITA
+  const currentWita = getCurrentWitaTime();
+  const passedSlotCodes = isToday ? getPassedSlots(currentWita.timeStr) : [];
 
   // 3. Validasi Filter Kode Ruangan (Opsional)
   let filterRoomCode: string | undefined;
@@ -161,6 +179,16 @@ export async function getRoomAvailabilityUseCase(
         continue;
       }
 
+      // Periksa apakah slot ini telah terlewat hari ini (karena jam sekarang >= startTime)
+      if (isToday && passedSlotCodes.includes(slotCode)) {
+        const slotStatus: RoomSlotStatus = Object.freeze({
+          slotCode,
+          status: 'passed',
+        });
+        slotStatuses.push(slotStatus);
+        continue;
+      }
+
       // Slot kosong / tersedia
       const slotStatus: RoomSlotStatus = Object.freeze({
         slotCode,
@@ -183,8 +211,9 @@ export async function getRoomAvailabilityUseCase(
 
   // 6. Susun ringkasan statistik
   const totalRooms = scheduleItems.length;
+  const activeSlotCount = isToday ? SLOT_CODES.length - passedSlotCodes.length : SLOT_CODES.length;
   const fullyAvailableRooms = scheduleItems.filter(
-    (item) => item.availableSlots.length === SLOT_CODES.length
+    (item) => activeSlotCount > 0 && item.availableSlots.length === activeSlotCount
   ).length;
   const fullyBlockedRooms = scheduleItems.filter(
     (item) => item.availableSlots.length === 0 && item.bookedSlots.length === 0
@@ -197,6 +226,10 @@ export async function getRoomAvailabilityUseCase(
     date,
     formattedIndonesianDate,
     rooms: Object.freeze(scheduleItems),
+    isToday,
+    isTomorrow,
+    currentTimeWita: currentWita.timeStr,
+    passedSlots: Object.freeze(passedSlotCodes),
     summary: Object.freeze({
       totalRooms,
       fullyAvailableRooms,

@@ -146,5 +146,62 @@ describe('Availability Matrix Template (src/core/templates/availability-matrix.t
       expect(result).toContain('Kosong *ABC, G-O*');
       expect(result).toContain('Terisi: *DEF* (PTI 3A)');
     });
+
+    it('should render header and remaining slots correctly when isToday and passedSlots are present', () => {
+      const data: AvailabilityMatrixData = {
+        date: mockDate,
+        formattedIndonesianDate: 'Kamis, 15 Oktober 2026',
+        isToday: true,
+        currentTimeWita: '15:00',
+        passedSlots: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
+        rooms: [
+          {
+            room: {
+              code: 'RAK_2.1',
+              name: 'Ruang 2.1',
+              building: 'Gedung R.A. Kartini',
+              floor: 2,
+              capacity: 40,
+              isActive: true,
+            },
+            slots: [],
+            availableSlots: ['I', 'J', 'K', 'L', 'M', 'N', 'O'],
+            bookedSlots: [],
+            blockedSlots: [],
+          },
+        ],
+        summary: {
+          totalRooms: 1,
+          fullyAvailableRooms: 1,
+          partiallyBookedRooms: 0,
+          fullyBlockedRooms: 0,
+        },
+      };
+
+      const result = formatAvailabilityMatrix(data);
+      expect(result).toContain('Hari Ini, Kamis, 15 Oktober 2026');
+      expect(result).toContain('Slot *A-H* telah terlewat per *15:00 WITA*');
+      expect(result).toContain('RAK_2.1');
+      expect(result).toContain('🟢 *Tersedia:* *I-O*');
+      expect(result).toContain('!info besok');
+    });
+
+    it('should render Besok prefix when isTomorrow is true', () => {
+      const data: AvailabilityMatrixData = {
+        date: mockDate,
+        formattedIndonesianDate: 'Jumat, 16 Oktober 2026',
+        isTomorrow: true,
+        rooms: [],
+        summary: {
+          totalRooms: 0,
+          fullyAvailableRooms: 0,
+          partiallyBookedRooms: 0,
+          fullyBlockedRooms: 0,
+        },
+      };
+
+      const result = formatAvailabilityMatrix(data);
+      expect(result).toContain('Besok, Jumat, 16 Oktober 2026');
+    });
   });
 });

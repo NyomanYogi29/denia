@@ -178,3 +178,14 @@ export function parseSlotString(raw: string, options?: SlotParseOptions): Result
   log.debug('Berhasil mem-parsing slot string', { raw, totalSks: parsed.totalSks, timeRange });
   return ok(parsed);
 }
+
+/**
+ * Menghitung daftar slot perkuliahan yang telah mulai/terlewat berdasarkan jam saat ini (WITA).
+ * Sebuah slot dianggap telah lewat jika waktu saat ini (HH:mm) >= startTime dari slot tersebut.
+ */
+export function getPassedSlots(currentTimeStr: string): SlotCode[] {
+  return (Object.keys(SLOTS) as SlotCode[]).filter((slot) => {
+    const startTime = SLOTS[slot].startTime;
+    return currentTimeStr >= startTime;
+  });
+}

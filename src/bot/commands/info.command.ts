@@ -39,7 +39,14 @@ export function createInfoCommandHandler(): CommandHandler {
 
     if (args.length === 1) {
       const arg = args[0]!;
-      if (DATE_REGEX.test(arg)) {
+      const lower = arg.toLowerCase();
+      if (
+        DATE_REGEX.test(arg) ||
+        lower === 'besok' ||
+        lower === 'tomorrow' ||
+        lower === 'today' ||
+        lower === 'hari ini'
+      ) {
         dateInput = arg;
       } else {
         // Jika bukan format tanggal murni, bisa berupa kode ruangan atau tanggal yang akan divalidasi
@@ -52,7 +59,16 @@ export function createInfoCommandHandler(): CommandHandler {
       }
     } else if (args.length >= 2) {
       const [first, second] = args;
-      if (DATE_REGEX.test(first!) || first!.includes('/')) {
+      const lowerFirst = first!.toLowerCase();
+      const lowerSecond = second!.toLowerCase();
+      if (
+        DATE_REGEX.test(first!) ||
+        first!.includes('/') ||
+        lowerFirst === 'besok' ||
+        lowerFirst === 'tomorrow' ||
+        lowerFirst === 'today' ||
+        lowerFirst === 'hari ini'
+      ) {
         dateInput = first;
         roomCodeInput = second;
       } else {

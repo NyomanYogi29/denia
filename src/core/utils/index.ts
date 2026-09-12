@@ -4,6 +4,7 @@ export {
   validateSlotContinuity,
   validateSlotLimit,
   formatSlotTimeRange,
+  getPassedSlots,
   type ParsedSlot,
   type SlotParseOptions,
 } from './slot-parser.ts';
@@ -13,6 +14,8 @@ export {
   ISO_DATE_REGEX,
   DEFAULT_TIMEZONE,
   getTodayIso,
+  getTomorrowIso,
+  getCurrentWitaTime,
   isoToDateString,
   parseDateString,
   formatIndonesianDate,

@@ -1,7 +1,7 @@
 import type { RoomInfo } from '@/core/constants';
 import type { ParsedDate } from '@/core/utils';
 
-export type SlotStatusType = 'available' | 'booked' | 'blocked';
+export type SlotStatusType = 'available' | 'booked' | 'blocked' | 'passed';
 
 export interface RoomSlotStatus {
   readonly slotCode: string;
@@ -23,6 +23,10 @@ export interface AvailabilityMatrixData {
   readonly date: ParsedDate;
   readonly formattedIndonesianDate: string;
   readonly rooms: readonly RoomScheduleItem[];
+  readonly isToday?: boolean;
+  readonly isTomorrow?: boolean;
+  readonly currentTimeWita?: string;
+  readonly passedSlots?: readonly string[];
   readonly summary: {
     readonly totalRooms: number;
     readonly fullyAvailableRooms: number;
@@ -78,14 +82,35 @@ export function compressSlotList(slotCodes: readonly string[]): string {
  * mudah dibaca, dan informatif bagi mahasiswa/korti.
  */
 export function formatAvailabilityMatrix(data: AvailabilityMatrixData): string {
-  const { date, formattedIndonesianDate, rooms, summary } = data;
+  const {
+    date,
+    formattedIndonesianDate,
+    rooms,
+    summary,
+    isToday,
+    isTomorrow,
+    currentTimeWita,
+    passedSlots = [],
+  } = data;
+
+  let datePrefix = '';
+  if (isTomorrow) {
+    datePrefix = 'Besok, ';
+  } else if (isToday) {
+    datePrefix = 'Hari Ini, ';
+  }
 
   const lines: string[] = [
     '📊 *MATRIKS KETERSEDIAAN RUANGAN SDP UNDIKSHA*',
-    `📅 Tanggal : *${formattedIndonesianDate}* (${date.raw})`,
-    '──────────────────────────',
-    '',
+    `📅 Tanggal : *${datePrefix}${formattedIndonesianDate}* (${date.raw})`,
   ];
+
+  if (isToday && passedSlots.length > 0) {
+    const timeDisplay = currentTimeWita ? ` per *${currentTimeWita} WITA*` : '';
+    lines.push(`⏰ Info Jam : Slot *${compressSlotList(passedSlots)}* telah terlewat${timeDisplay}.`);
+  }
+
+  lines.push('──────────────────────────', '');
 
   if (rooms.length === 0) {
     lines.push('⚠️ _Tidak ada data ruangan yang aktif pada tanggal ini._');
@@ -109,15 +134,23 @@ export function formatAvailabilityMatrix(data: AvailabilityMatrixData): string {
       const { room, availableSlots, bookedSlots, blockedSlots } = item;
 
       // Kasus 1: Seluruh slot diblokir force event
-      if (availableSlots.length === 0 && blockedSlots.length > 0) {
+      if (availableSlots.length === 0 && blockedSlots.length > 0 && bookedSlots.length === 0) {
         const eventName = blockedSlots[0]?.eventName ?? 'Agenda Institusi';
-        lines.push(`• *${room.code}* (${room.name}) : ⛔ _Diblokir seharian: ${eventName}_`);
+        lines.push(`• *${room.code}* (${room.name}) : ⛔ _Diblokir: ${eventName}_`);
         continue;
       }
 
-      // Kasus 2: Semua slot kosong
+      // Kasus 2: Semua slot kosong (belum ada yang booking/block)
       if (bookedSlots.length === 0 && blockedSlots.length === 0) {
-        lines.push(`• *${room.code}* (${room.name}) : 🟢 *Semua Kosong* (A-O)`);
+        if (isToday && availableSlots.length === 0) {
+          lines.push(`• *${room.code}* (${room.name}) : ⚪ _Tidak ada slot tersisa hari ini_`);
+        } else if (isToday && passedSlots.length > 0) {
+          lines.push(
+            `• *${room.code}* (${room.name}) : 🟢 *Tersedia:* *${compressSlotList(availableSlots)}*`
+          );
+        } else {
+          lines.push(`• *${room.code}* (${room.name}) : 🟢 *Semua Kosong* (A-O)`);
+        }
         continue;
       }
 
@@ -148,10 +181,11 @@ export function formatAvailabilityMatrix(data: AvailabilityMatrixData): string {
         bookedStrings.push(`⛔ *${compressSlotList(slots)}* (${evName})`);
       }
 
-      const freeText = availableSlots.length > 0 ? compressSlotList(availableSlots) : 'Penuh';
+      const freeText =
+        availableSlots.length > 0 ? `Kosong *${compressSlotList(availableSlots)}*` : 'Penuh';
 
       lines.push(
-        `• *${room.code}* (${room.name}) : Kosong *${freeText}* | Terisi: ${bookedStrings.join(', ')}`
+        `• *${room.code}* (${room.name}) : ${freeText} | Terisi: ${bookedStrings.join(', ')}`
       );
     }
     lines.push('');
@@ -161,6 +195,9 @@ export function formatAvailabilityMatrix(data: AvailabilityMatrixData): string {
   lines.push(
     `📈 *Ringkasan:* ${summary.totalRooms} ruangan (${summary.fullyAvailableRooms} kosong penuh, ${summary.partiallyBookedRooms} terisi sebagian)`
   );
+  if (isToday) {
+    lines.push('💡 _Ketik `!info besok` untuk melihat ketersediaan jadwal esok hari._');
+  }
   lines.push('💡 _Pesan ruang:_ `!pinjam [kode_ruangan] [DD/MM/YYYY] [kode_slot]`');
 
   return lines.join('\n');
