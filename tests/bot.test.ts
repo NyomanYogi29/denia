@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it, beforeEach } from 'bun:test';
 import type { proto, WAMessage, WASocket } from '@whiskeysockets/baileys';
+import { resetRateLimit } from '@/core/middleware/rate-limiter.middleware.ts';
 import {
   createBotClient,
   createMessageRouter,
@@ -315,6 +316,12 @@ describe('WhatsApp Events & Message Router Module (src/bot/events.ts)', () => {
   });
 
   describe('createMessageRouter (Integrated Workflow)', () => {
+    beforeEach(async () => {
+      await resetRateLimit('628123456789@s.whatsapp.net');
+      await resetRateLimit('628111222333@s.whatsapp.net');
+      await resetRateLimit('628999000111@s.whatsapp.net');
+    });
+
     it('should filter out non-command messages and return ok(null)', async () => {
       const router = createMessageRouter();
       const sock = createMockSocket();

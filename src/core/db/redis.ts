@@ -12,13 +12,11 @@ const DEFAULT_REDIS_TIMEOUT_MS = 1500;
 /**
  * Instance singleton Redis client bawaan Bun (Bun.RedisClient).
  * Terkoneksi sesuai konfigurasi REDIS_URL pada environment.
- * enableOfflineQueue: false menjamin fail-fast / fail-open instan jika server Redis offline.
+ * Auto-reconnect aktif dan proteksi fail-fast ditangani oleh wrapper withTimeout.
  */
 export const redis = new RedisClient(config.redis.url, {
-  enableOfflineQueue: false,
-  connectionTimeout: 1000,
-  maxRetries: 3,
   autoReconnect: true,
+  maxRetries: 3,
 });
 
 /**
@@ -57,6 +55,35 @@ export async function redisPing(timeoutMs = DEFAULT_REDIS_TIMEOUT_MS): Promise<R
     log.warn('Gagal melakukan ping ke Redis server', { error: String(error) });
     return err(
       new DatabaseError(`Gagal menghubungi server Redis: ${error instanceof Error ? error.message : String(error)}`, {
+        url: config.redis.url,
+      })
+    );
+  }
+}
+
+/**
+ * Memverifikasi konektivitas Redis client saat startup engine bot (bootstrap).
+ * Mencatat log success jika Redis aktif, atau log error informatif jika Redis tidak dapat dihubungi,
+ * tanpa melempar fatal exception (fail-safe untuk mendukung mode fail-open).
+ */
+export async function verifyRedisConnection(
+  timeoutMs = DEFAULT_REDIS_TIMEOUT_MS
+): Promise<Result<boolean, AppError>> {
+  try {
+    const res = await withTimeout(redis.ping(), timeoutMs);
+    log.success('Koneksi Redis client berhasil terverifikasi. Engine rate limiting aktif.', {
+      url: config.redis.url,
+      response: String(res),
+    });
+    return ok(true);
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    log.warn(
+      `Redis server belum aktif di ${config.redis.url}. Rate limiter beralih ke mode fail-open (jalankan "bun run redis:up" untuk mengaktifkan Redis Docker).`,
+      { error: errorMsg }
+    );
+    return err(
+      new DatabaseError(`Gagal menghubungi server Redis: ${errorMsg}`, {
         url: config.redis.url,
       })
     );

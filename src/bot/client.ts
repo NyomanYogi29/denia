@@ -1,3 +1,5 @@
+import { mkdir, rm } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { Boom } from '@hapi/boom';
 import makeWASocket, {
   DisconnectReason,
@@ -22,6 +24,25 @@ import type {
 } from './types.ts';
 
 const log = logger.child({ module: 'WHATSAPP_CLIENT' });
+
+/**
+ * Membersihkan folder kredensial autentikasi WhatsApp (auth_info) secara aman tanpa pernah menyentuh file database SQLite.
+ */
+export async function clearAuthCredentials(authDir: string): Promise<void> {
+  const resolved = resolve(authDir);
+  const root = resolve('.');
+  const dataDir = resolve('./data');
+  const srcDir = resolve('./src');
+
+  // Guard keamanan ketat: cegah penghapusan folder penting secara tidak sengaja
+  if (resolved === root || resolved === dataDir || resolved === srcDir) {
+    throw new Error(`Direktori "${authDir}" terproteksi dan tidak boleh dihapus sebagai sesi auth.`);
+  }
+
+  await rm(resolved, { recursive: true, force: true });
+  await mkdir(resolved, { recursive: true });
+  log.info(`Folder kredensial sesi "${authDir}" telah dibersihkan secara aman (database SQLite tetap terjaga utuh).`);
+}
 
 /**
  * Factory untuk membuat instance client WhatsApp Bot berbasis Baileys dengan Result Pattern
@@ -193,7 +214,25 @@ export const createBotClient = (options: BotClientOptions = {}): BotClient => {
 
           if (isLoggedOut) {
             updateStatus('logged_out');
-            log.error('Sesi WhatsApp telah logout dari perangkat. Bersihkan sesi auth_info untuk login ulang.', error);
+            log.warn(
+              'Sesi WhatsApp telah logout dari perangkat. Membersihkan kredensial auth_info secara aman dan meminta QR code baru...',
+              error
+            );
+            clearAuthCredentials(resolvedAuthDir)
+              .then(() => {
+                log.info('Kredensial lama dibersihkan. Memulai ulang inisialisasi koneksi untuk meminta QR code baru...');
+                reconnectAttempts = 0;
+                reconnectTimer = setTimeout(() => {
+                  if (!isExplicitDisconnect) {
+                    connect().catch((err) => {
+                      log.error('Gagal saat menginisialisasi ulang koneksi setelah logout', err);
+                    });
+                  }
+                }, 1500);
+              })
+              .catch((cleanupErr) => {
+                log.error('Gagal membersihkan folder sesi auth_info setelah logout', cleanupErr);
+              });
             return;
           }
 

@@ -30,6 +30,14 @@ export function getRateLimitKey(jid: string): string {
   }
   return `ratelimit:user:${normalizedJid}`;
 }
+let isRedisDownWarnLogged = false;
+
+/**
+ * Mereset state warning Redis offline (terutama digunakan untuk kebutuhan testing).
+ */
+export function resetRedisDownWarnState(): void {
+  isRedisDownWarnLogged = false;
+}
 
 /**
  * Middleware untuk memvalidasi batas laju (Rate Limiting) perintah per user WhatsApp.
@@ -38,7 +46,7 @@ export function getRateLimitKey(jid: string): string {
  * Kebijakan:
  * - Standar: 7 perintah per 60 detik per user.
  * - Fail-open: Jika Redis mengalami gangguan/offline, sistem tetap mengizinkan perintah (allowed: true)
- *   agar operasional kampus tidak terhenti, dengan mencatat peringatan pada log.
+ *   agar operasional kampus tidak terhenti, dengan mencatat peringatan secara terukur (throttled).
  */
 export async function checkRateLimit(
   jid: string,
@@ -52,10 +60,18 @@ export async function checkRateLimit(
   const incrResult = await redisIncr(key);
   if (!incrResult.success) {
     // Kebijakan Fail-Open: Jangan blokir pengguna jika Redis mengalami masalah teknis
-    log.warn(
-      `Pemeriksaan rate limit gagal karena gangguan Redis. Menerapkan kebijakan fail-open untuk "${jid}"`,
-      { error: incrResult.error.message }
-    );
+    if (!isRedisDownWarnLogged) {
+      log.warn(
+        `Pemeriksaan rate limit gagal karena gangguan Redis. Menerapkan kebijakan fail-open untuk "${jid}" (peringatan berikutnya dialihkan ke log debug).`,
+        { error: incrResult.error.message }
+      );
+      isRedisDownWarnLogged = true;
+    } else {
+      log.debug(
+        `Redis offline: menerapkan fail-open untuk "${jid}".`,
+        { error: incrResult.error.message }
+      );
+    }
     return Object.freeze({
       allowed: true,
       currentCount: 1,
@@ -63,6 +79,12 @@ export async function checkRateLimit(
       remaining: maxRequests - 1,
       resetInSeconds: 0,
     });
+  }
+
+  // Jika sebelumnya tercatat offline dan kini berhasil, reset status warning
+  if (isRedisDownWarnLogged) {
+    log.info('Koneksi Redis kembali pulih. Rate limiter beroperasi normal.');
+    isRedisDownWarnLogged = false;
   }
 
   const currentCount = incrResult.data;

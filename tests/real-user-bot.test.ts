@@ -15,6 +15,7 @@ import {
 } from '@/core/db';
 import { createBufferService } from '@/core/services/buffer.service.ts';
 import { ReactionEmoji } from '@/core/templates';
+import { resetRateLimit } from '@/core/middleware/rate-limiter.middleware.ts';
 
 function createMockMessage(options: {
   text?: string;
@@ -90,6 +91,12 @@ describe('Real User WhatsApp Bot Test Cases (Admin, Korti & Unregistered)', () =
     await db.delete(users).where(eq(users.jid, kortiJidA));
     await db.delete(users).where(eq(users.jid, kortiJidB));
     await db.delete(users).where(eq(users.jid, strangerJid));
+
+    // Reset rate limit untuk JID pengujian agar terisolasi antar pengujian
+    await resetRateLimit(kortiJidA);
+    await resetRateLimit(kortiJidB);
+    await resetRateLimit(strangerJid);
+    await resetRateLimit('628123456789@s.whatsapp.net');
 
     // Pastikan admin utama terdaftar di whitelist database
     await ensureAdminUsers();

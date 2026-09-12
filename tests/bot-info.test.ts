@@ -47,9 +47,15 @@ function createMockSocket(): WASocket & {
   return mockSock;
 }
 
+import { resetRateLimit } from '@/core/middleware/rate-limiter.middleware.ts';
+
 describe('WhatsApp Bot Info Command Consumer (Fase 5.3 & Evaluasi E.4 - !info Routing to DM)', () => {
   const testSenderJid = '628123456789@s.whatsapp.net';
   const testGroupJid = '120363028123456789@g.us';
+
+  beforeEach(async () => {
+    await resetRateLimit(testSenderJid);
+  });
 
   it('should process !info in group, react with 📩, send matrix to DM, and keep group clean', async () => {
     const router = registerDefaultBotCommands(createMessageRouter());

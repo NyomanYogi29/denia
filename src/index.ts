@@ -1,5 +1,5 @@
 import { createBotClient, createMessageRouter, registerDefaultBotCommands } from '@/bot';
-import { ensureAdminUsers } from '@/core/db';
+import { ensureAdminUsers, verifyRedisConnection, redisClose, backupDatabase } from '@/core/db';
 import { createBufferService } from '@/core/services/buffer.service.ts';
 import { logger } from '@/core/logger';
 
@@ -11,7 +11,18 @@ const log = logger.child({ module: 'APP_ENTRYPOINT' });
 async function bootstrap(): Promise<void> {
   log.info('Memulai runtime Bot WhatsApp Denia...');
 
-  // Pastikan akun admin terdaftar permanen di database
+  // 1. Snapshot backup otomatis database SQLite (point-in-time recovery & retensi 5 file)
+  const backupResult = await backupDatabase();
+  if (!backupResult.success) {
+    log.warn('Peringatan: Gagal membuat snapshot backup database SQLite saat startup', {
+      error: backupResult.error.message,
+    });
+  }
+
+  // 2. Verifikasi konektivitas Redis client untuk modul rate limiting (fail-safe / non-blocking)
+  await verifyRedisConnection();
+
+  // 3. Pastikan akun admin terdaftar permanen di database
   await ensureAdminUsers();
 
   const client = createBotClient();
@@ -25,8 +36,9 @@ async function bootstrap(): Promise<void> {
 
   // Daftarkan handler shutdown graceful
   const shutdown = async (signal: string) => {
-    log.info(`Menerima sinyal ${signal}. Menutup koneksi WhatsApp dengan aman...`);
+    log.info(`Menerima sinyal ${signal}. Menutup koneksi WhatsApp dan Redis dengan aman...`);
     await bufferService.destroy();
+    await redisClose();
     const disconnectResult = await client.disconnect();
     if (!disconnectResult.success) {
       log.error('Gagal saat memutus koneksi WhatsApp', disconnectResult.error);
