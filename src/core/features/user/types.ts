@@ -1,5 +1,5 @@
 import type { User } from '@/core/db/schema.ts';
-import type { CreateUserInput, CreateUserRawInput } from '@/core/validators/user.validator.ts';
+import type { CreateUserInput, CreateUserRawInput } from '@/core/validators/user';
 
 export type CreateUserUseCaseInput = Partial<CreateUserRawInput>;
 

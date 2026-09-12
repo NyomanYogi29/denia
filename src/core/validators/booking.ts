@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { RoomInfo } from '@/core/constants';
-import { checkSlotAvailability } from '@/core/db/repositories/booking.repository.ts';
+import { checkSlotAvailability } from '@/core/db/repositories/booking';
 import {
   SlotConflictError,
   type AppError,

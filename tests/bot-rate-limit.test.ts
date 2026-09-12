@@ -3,7 +3,7 @@ import type { WAMessage, WASocket } from '@whiskeysockets/baileys';
 import { createMessageRouter, registerDefaultBotCommands } from '@/bot';
 import { config } from '@/core/config';
 import { ReactionEmoji } from '@/core/templates';
-import * as rateLimiterModule from '@/core/middleware/rate-limiter.middleware.ts';
+import * as rateLimiterModule from '@/core/middleware/rate-limiter';
 
 function createMockMessage(options: {
   text?: string;

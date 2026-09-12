@@ -13,9 +13,10 @@ import {
   ensureAdminUsers,
   type User,
 } from '@/core/db';
-import { createBufferService } from '@/core/services/buffer.service.ts';
+import { createBufferService } from '@/core/services/buffer';
 import { ReactionEmoji } from '@/core/templates';
-import { resetRateLimit } from '@/core/middleware/rate-limiter.middleware.ts';
+import { resetRateLimit } from '@/core/middleware/rate-limiter';
+import { getTodayIso, getTomorrowIso, isoToDateString } from '@/core/utils';
 
 function createMockMessage(options: {
   text?: string;
@@ -67,18 +68,11 @@ describe('Real User WhatsApp Bot Test Cases (Admin, Korti & Unregistered)', () =
   const groupJid = '120363330872032502@g.us';
   const testRoomCode = 'RAK_2.1';
 
-  // Format tanggal hari ini (Hari H)
-  const today = new Date();
-  const todayFormatted = `${String(today.getDate()).padStart(2, '0')}/${String(
-    today.getMonth() + 1
-  ).padStart(2, '0')}/${today.getFullYear()}`;
-
-  // Format tanggal besok (H-1)
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowFormatted = `${String(tomorrow.getDate()).padStart(2, '0')}/${String(
-    tomorrow.getMonth() + 1
-  ).padStart(2, '0')}/${tomorrow.getFullYear()}`;
+  // Format tanggal hari ini dan besok terpusat WITA
+  const todayIso = getTodayIso();
+  const tomorrowIso = getTomorrowIso();
+  const todayFormatted = (isoToDateString(todayIso) as any).data ?? '13/09/2026';
+  const tomorrowFormatted = (isoToDateString(tomorrowIso) as any).data ?? '14/09/2026';
 
   let bufferService: ReturnType<typeof createBufferService>;
   let mockSock: ReturnType<typeof createMockSocket>;

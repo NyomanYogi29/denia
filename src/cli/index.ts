@@ -11,19 +11,16 @@ import {
   executeUserAdd,
   executeBook,
   executeCancel,
+  executeInfo,
+  executeForce,
   FLUSHDB_OPTIONS,
   SEED_KORTI_OPTIONS,
   USER_ADD_OPTIONS,
   BOOK_OPTIONS,
   CANCEL_OPTIONS,
   INFO_OPTIONS,
-  executeBook,
-  executeCancel,
-  executeFlushDb,
-  executeInfo,
-  executeSeedKorti,
-  executeUserAdd,
-} from '@/cli/commands';
+  FORCE_OPTIONS,
+} from '@/cli/commands/index.ts';
 import {
   CliCommandNotFoundError,
   handleCliError,
@@ -42,6 +39,7 @@ function printHelp(): void {
   console.log('  book, pinjam          Meminjam ruangan kuliah SDP Undiksha (Fase 5.1)');
   console.log('  cancel, batal         Membatalkan peminjaman ruangan kuliah SDP Undiksha (Fase 5.2)');
   console.log('  info, jadwal          Menampilkan matriks ketersediaan ruangan (Fase 5.3)');
+  console.log('  force, ambilalih      Pengambilalihan paksa ruangan untuk agenda institusi (Fase 5.4)');
   console.log(`  ${chalk.red('flushdb <target>')}      ${chalk.bold.red('[DANGER ZONE]')} Menghapus data tabel (all, user, rooms, force_events, bookings)`);
   console.log('  help                  Menampilkan pesan bantuan ini\n');
   console.log(chalk.bold('OPSI GLOBAL:'));
@@ -59,6 +57,7 @@ function printHelp(): void {
   console.log('  denia info RAK_2.1 15/10/2026');
   console.log('  denia book RAK_2.1 15/10/2026 DEF --jid 08123456789');
   console.log('  denia cancel RAK_2.1 15/10/2026 DEF --jid 08123456789');
+  console.log('  denia force RAK_2.1 15/10/2026 DEF "Ujian Sidang" --jid 08987654321');
   console.log('  denia pinjam --interactive');
   console.log('  denia batal --interactive');
   console.log('  denia flushdb user');
@@ -90,6 +89,7 @@ async function main(): Promise<void> {
     ...BOOK_OPTIONS,
     ...CANCEL_OPTIONS,
     ...INFO_OPTIONS,
+    ...FORCE_OPTIONS,
   };
 
   const { values, positionals } = parseArgs({
@@ -149,6 +149,14 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
+  if (firstPos === 'force' || firstPos === 'ambilalih') {
+    const result = await executeForce(values, runtimeConfig, positionals);
+    if (!result.success) {
+      handleCliError(result.error);
+    }
+    process.exit(0);
+  }
+
   if (firstPos === 'flushdb' || firstPos?.startsWith('flushdb:')) {
     const target = firstPos.includes(':') ? firstPos.split(':')[1] : secondPos;
     const result = await executeFlushDb(values, runtimeConfig, target);
@@ -157,6 +165,7 @@ async function main(): Promise<void> {
     }
     process.exit(0);
   }
+
 
   // Jika perintah tidak dikenali
   const unknownCmd = positionals.join(' ');

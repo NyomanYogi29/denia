@@ -1,16 +1,18 @@
 import type { MessageRouter } from '@/bot/types.ts';
-import type { BufferService } from '@/core/services/buffer.service.ts';
+import type { BufferService } from '@/core/services/buffer.ts';
 import {
   createPinjamCommandHandler,
   type PinjamCommandOptions,
-} from './pinjam.command.ts';
-import { createBatalCommandHandler } from './batal.command.ts';
-import { createInfoCommandHandler } from './info.command.ts';
+} from './pinjam.ts';
+import { createBatalCommandHandler } from './batal.ts';
+import { createInfoCommandHandler } from './info.ts';
+import { createForceCommandHandler } from './force.ts';
 
 export {
   createPinjamCommandHandler,
   createBatalCommandHandler,
   createInfoCommandHandler,
+  createForceCommandHandler,
 };
 export type { PinjamCommandOptions };
 
@@ -30,6 +32,7 @@ export function registerDefaultBotCommands(
   });
   const batalHandler = createBatalCommandHandler();
   const infoHandler = createInfoCommandHandler();
+  const forceHandler = createForceCommandHandler();
 
   router.register('pinjam', pinjamHandler);
   router.register('book', pinjamHandler);
@@ -37,6 +40,9 @@ export function registerDefaultBotCommands(
   router.register('cancel', batalHandler);
   router.register('info', infoHandler);
   router.register('jadwal', infoHandler);
+  router.register('force', forceHandler);
+  router.register('ambilalih', forceHandler);
+  router.register('paksa', forceHandler);
 
   return router;
 }

@@ -3,17 +3,15 @@ import { eq } from 'drizzle-orm';
 import { db, bookings, users } from '@/core/db';
 import { bookAction } from '@/cli/commands/book';
 import { cancelAction, executeCancel } from '@/cli/commands/cancel';
+import { getTomorrowIso, isoToDateString } from '@/core/utils';
 
 describe('CLI Cancel Command Consumer (Fase 5.2 - denia cancel / batal)', () => {
   const ownerJid = '628333444555@s.whatsapp.net';
   const otherJid = '628444555666@s.whatsapp.net';
   const testRoomCode = 'RAK_2.1';
 
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowFormatted = `${String(tomorrow.getDate()).padStart(2, '0')}/${String(
-    tomorrow.getMonth() + 1
-  ).padStart(2, '0')}/${tomorrow.getFullYear()}`;
+  const tomorrowIso = getTomorrowIso();
+  const tomorrowFormatted = (isoToDateString(tomorrowIso) as any).data ?? '14/09/2026';
 
   beforeEach(async () => {
     await db.delete(bookings).where(eq(bookings.roomCode, testRoomCode));

@@ -3,24 +3,18 @@ import { eq } from 'drizzle-orm';
 import { db, bookings, forceEvents, users } from '@/core/db';
 import { createBookingUseCase } from '@/core/features/booking';
 import { ErrorCode } from '@/core/errors';
+import { getTodayIso, getTomorrowIso, isoToDateString } from '@/core/utils';
 
 describe('Booking Use Case (src/core/features/booking/create-booking.usecase.ts)', () => {
   const testKortiJid = '628123456789@s.whatsapp.net';
   const testStaffJid = '628987654321@s.whatsapp.net';
   const testRoomCode = 'RAK_2.1';
 
-  // Tanggal besok (H-1)
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowFormatted = `${String(tomorrow.getDate()).padStart(2, '0')}/${String(
-    tomorrow.getMonth() + 1
-  ).padStart(2, '0')}/${tomorrow.getFullYear()}`;
-
-  // Tanggal hari ini
-  const today = new Date();
-  const todayFormatted = `${String(today.getDate()).padStart(2, '0')}/${String(
-    today.getMonth() + 1
-  ).padStart(2, '0')}/${today.getFullYear()}`;
+  // Tanggal besok (H-1) dan hari ini terpusat WITA
+  const todayIso = getTodayIso();
+  const tomorrowIso = getTomorrowIso();
+  const todayFormatted = (isoToDateString(todayIso) as any).data ?? '13/09/2026';
+  const tomorrowFormatted = (isoToDateString(tomorrowIso) as any).data ?? '14/09/2026';
 
   beforeEach(async () => {
     // Bersihkan data tes

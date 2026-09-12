@@ -64,3 +64,14 @@ export {
   renderHeader as renderInfoHeader,
   type InfoActionOptions,
 } from './info/index.ts';
+
+export {
+  FORCE_COMMAND,
+  FORCE_OPTIONS,
+  executeForce,
+  forceAction,
+  promptForceInteractive,
+  renderSuccess as renderForceSuccess,
+  renderHeader as renderForceHeader,
+  type ForceActionOptions,
+} from './force/index.ts';

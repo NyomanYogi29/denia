@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import * as XLSX from 'xlsx';
-import { upsertUser } from '@/core/db/repositories/user.repository.ts';
+import { upsertUser } from '@/core/db/repositories/user.ts';
 import { AppError, ErrorCode, NotFoundError, ValidationError } from '@/core/errors/index.ts';
 import { logger } from '@/core/logger/index.ts';
 import { err, ok, type Result } from '@/core/types/index.ts';

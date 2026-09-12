@@ -3,7 +3,7 @@ import * as redisDb from '@/core/db/redis.ts';
 import {
   checkRateLimit,
   resetRedisDownWarnState,
-} from '@/core/middleware/rate-limiter.middleware.ts';
+} from '@/core/middleware/rate-limiter';
 import { ok, err } from '@/core/types';
 import { DatabaseError } from '@/core/errors';
 

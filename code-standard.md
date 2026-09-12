@@ -65,12 +65,15 @@ src/
 
 ---
 
-## 3. Struktur Modul & Barrel Export
+## 3. Struktur Modul, Barrel Export & Konvensi Penamaan Berkas
 
 Setiap direktori fitur/modul wajib menyediakan barrel export `index.ts`:
 - Re-export tipe wajib menggunakan modifier `type` (`export type { ... }`).
 - File internal di dalam modul yang sama saling mengimpor menggunakan relative path bertanda ekstensi `.ts` (`./types.ts`).
 - Konsumen di luar modul mengimpor via path alias `@/core/<module>`, `@/bot`, atau `@/cli/<subcommand>`.
+
+**Konvensi Penamaan Berkas (*Zero Redundant Dot-Suffixes*):**
+Penamaan berkas wajib menggunakan format `kebab-case.ts` murni tanpa menyertakan suffix titik ganda yang mengulang peran atau nama folder induknya (jangan menambahkan `.validator.ts`, `.service.ts`, `.command.ts`, `.repository.ts`, `.usecase.ts`, atau `.middleware.ts`). Konteks direktori sudah merepresentasikan fungsinya secara mandiri (misal: di `src/core/validators/` cukup `booking.ts`, di `src/bot/commands/` cukup `pinjam.ts`, di `src/core/db/repositories/` cukup `booking.ts`, di `src/core/services/` cukup `buffer.ts`, di `src/core/features/` cukup `create-booking.ts`). Pengecualian resmi hanya berlaku untuk berkas pengujian di direktori `tests/` yang wajib mempertahankan akhiran `.test.ts` untuk kebutuhan auto-discovery Bun test runner (misal: `tests/buffer.test.ts`, `tests/booking.test.ts`).
 
 ---
 

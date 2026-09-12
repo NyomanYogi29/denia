@@ -4,7 +4,7 @@ import { db, rooms, users, ensureAdminUsers } from '@/core/db';
 import {
   flushDatabase,
   normalizeFlushTarget,
-} from '@/core/services/flush.service.ts';
+} from '@/core/services/flush';
 
 describe('Danger Zone: FlushDB Module', () => {
   describe('normalizeFlushTarget', () => {

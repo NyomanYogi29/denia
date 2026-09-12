@@ -47,7 +47,7 @@ function createMockSocket(): WASocket & {
   return mockSock;
 }
 
-import { resetRateLimit } from '@/core/middleware/rate-limiter.middleware.ts';
+import { resetRateLimit } from '@/core/middleware/rate-limiter';
 
 describe('WhatsApp Bot Info Command Consumer (Fase 5.3 & Evaluasi E.4 - !info Routing to DM)', () => {
   const testSenderJid = '628123456789@s.whatsapp.net';

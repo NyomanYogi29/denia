@@ -8,9 +8,10 @@ import {
   type MessageContext,
 } from '@/bot';
 import { db, bookings, forceEvents, users } from '@/core/db';
-import { createBufferService } from '@/core/services/buffer.service.ts';
+import { createBufferService } from '@/core/services/buffer';
 import { resetRateLimit } from '@/core/middleware';
 import { ReactionEmoji } from '@/core/templates';
+import { getTodayIso, getTomorrowIso, isoToDateString } from '@/core/utils';
 
 function createMockMessage(options: {
   text?: string;
@@ -58,16 +59,10 @@ describe('WhatsApp Bot Booking Command Consumer (Fase 5.1 - !pinjam)', () => {
   const testGroupJid = '120363028123456789@g.us';
   const testRoomCode = 'RAK_2.1';
 
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowFormatted = `${String(tomorrow.getDate()).padStart(2, '0')}/${String(
-    tomorrow.getMonth() + 1
-  ).padStart(2, '0')}/${tomorrow.getFullYear()}`;
-
-  const today = new Date();
-  const todayFormatted = `${String(today.getDate()).padStart(2, '0')}/${String(
-    today.getMonth() + 1
-  ).padStart(2, '0')}/${today.getFullYear()}`;
+  const todayIso = getTodayIso();
+  const tomorrowIso = getTomorrowIso();
+  const todayFormatted = (isoToDateString(todayIso) as any).data ?? '13/09/2026';
+  const tomorrowFormatted = (isoToDateString(tomorrowIso) as any).data ?? '14/09/2026';
 
   beforeEach(async () => {
     await db.delete(bookings).where(eq(bookings.roomCode, testRoomCode));

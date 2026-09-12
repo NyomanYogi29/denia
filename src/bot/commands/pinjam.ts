@@ -4,7 +4,7 @@ import type { CommandHandler, MessageContext } from '@/bot/types.ts';
 import { ErrorCode, ValidationError } from '@/core/errors/index.ts';
 import { createBookingUseCase } from '@/core/features/booking/index.ts';
 import { logger } from '@/core/logger/index.ts';
-import type { BufferService } from '@/core/services/buffer.service.ts';
+import type { BufferService } from '@/core/services/buffer';
 
 const log = logger.child({ module: 'COMMAND_PINJAM' });
 

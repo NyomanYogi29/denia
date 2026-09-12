@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { findRoomByCode, listRooms } from '@/core/db/repositories/room.repository.ts';
+import { findRoomByCode, listRooms } from '@/core/db/repositories/room';
 
 describe('Room Repository (src/core/db/repositories/room.repository.ts)', () => {
   it('should find registered room by code case-insensitively', async () => {

@@ -4,30 +4,20 @@ import { db, bookings, forceEvents, users, rooms } from '@/core/db';
 import {
   checkSlotAvailability,
   createBookingImmediate,
-} from '@/core/db/repositories/booking.repository.ts';
-import { validateBookingRequest } from '@/core/validators/booking.validator.ts';
+} from '@/core/db/repositories/booking';
+import { validateBookingRequest } from '@/core/validators/booking';
 import { ErrorCode } from '@/core/errors';
-import { getTodayIso } from '@/core/utils';
+import { getTodayIso, getTomorrowIso, isoToDateString } from '@/core/utils';
 
 describe('Booking Repository & Availability Validator (Fase 5.1)', () => {
   const testUserJid = '628999888777@s.whatsapp.net';
   const testRoomCode = 'RAK_2.1';
 
-  // Dapatkan tanggal besok (H-1) dalam format DD/MM/YYYY dan ISO YYYY-MM-DD
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowDay = String(tomorrow.getDate()).padStart(2, '0');
-  const tomorrowMonth = String(tomorrow.getMonth() + 1).padStart(2, '0');
-  const tomorrowYear = tomorrow.getFullYear();
-  const tomorrowFormatted = `${tomorrowDay}/${tomorrowMonth}/${tomorrowYear}`;
-  const tomorrowIso = `${tomorrowYear}-${tomorrowMonth}-${tomorrowDay}`;
-
-  // Tanggal hari ini
-  const today = new Date();
-  const todayDay = String(today.getDate()).padStart(2, '0');
-  const todayMonth = String(today.getMonth() + 1).padStart(2, '0');
-  const todayYear = today.getFullYear();
-  const todayFormatted = `${todayDay}/${todayMonth}/${todayYear}`;
+  // Dapatkan tanggal hari ini dan besok (H-1) terpusat WITA
+  const todayIso = getTodayIso();
+  const tomorrowIso = getTomorrowIso();
+  const todayFormatted = (isoToDateString(todayIso) as any).data ?? '13/09/2026';
+  const tomorrowFormatted = (isoToDateString(tomorrowIso) as any).data ?? '14/09/2026';
 
   beforeEach(async () => {
     // Pastikan user terdaftar untuk foreign key

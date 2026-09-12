@@ -2,16 +2,14 @@ import { describe, expect, it, beforeEach, afterEach } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import { db, bookings, users } from '@/core/db';
 import { bookAction, executeBook } from '@/cli/commands/book';
+import { getTomorrowIso, isoToDateString } from '@/core/utils';
 
 describe('CLI Book Command Consumer (Fase 5.1 - denia book / pinjam)', () => {
   const testKortiJid = '628222333444@s.whatsapp.net';
   const testRoomCode = 'RAK_2.1';
 
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowFormatted = `${String(tomorrow.getDate()).padStart(2, '0')}/${String(
-    tomorrow.getMonth() + 1
-  ).padStart(2, '0')}/${tomorrow.getFullYear()}`;
+  const tomorrowIso = getTomorrowIso();
+  const tomorrowFormatted = (isoToDateString(tomorrowIso) as any).data ?? '14/09/2026';
 
   beforeEach(async () => {
     await db.delete(bookings).where(eq(bookings.roomCode, testRoomCode));

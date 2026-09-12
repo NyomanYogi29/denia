@@ -129,7 +129,7 @@
   - Guard kepemilikan sudah aktif di `cancelBookingImmediate` (`user_jid` check) dan `cancelBookingUseCase` (hanya pemilik asli atau admin/staf yang berhak membatalkan). Upaya pembatalan oleh pengguna lain otomatis ditolak dengan reaksi emoji ❌ di grup dan notifikasi edukatif dikirim via DM/Japri.
 
 #### 🔸 Role Staf / Admin:
-- [ ] **5.4 `!force [kode_ruangan] [DD/MM/YYYY] [kode_slot] [alasan]`**
+- [x] **5.4 `!force [kode_ruangan] [DD/MM/YYYY] [kode_slot] [alasan]`**
   - Pengambilalihan paksa slot ruangan untuk agenda institusi/dosen pengampu mendadak.
   - Parameter alasan wajib dicantumkan.
   - Menimpa booking yang ada (ubah status booking korti lama menjadi `force_cancelled`).

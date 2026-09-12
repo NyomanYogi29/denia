@@ -3,7 +3,7 @@ import { executeSeedKorti } from '@/cli/commands/seed-korti';
 import {
   sanitizeSpreadsheetPhone,
   seedKortiFromSpreadsheet,
-} from '@/core/services/seeder.service.ts';
+} from '@/core/services/seeder';
 
 describe('Seeder Service & Phone Sanitizer Module', () => {
   describe('sanitizeSpreadsheetPhone', () => {

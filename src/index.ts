@@ -1,6 +1,6 @@
 import { createBotClient, createMessageRouter, registerDefaultBotCommands } from '@/bot';
 import { ensureAdminUsers, verifyRedisConnection, redisClose, backupDatabase } from '@/core/db';
-import { createBufferService } from '@/core/services/buffer.service.ts';
+import { createBufferService } from '@/core/services/buffer';
 import { logger } from '@/core/logger';
 
 export * from './core';

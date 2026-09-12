@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'bun:test';
 import type { proto, WAMessage, WASocket } from '@whiskeysockets/baileys';
-import { resetRateLimit } from '@/core/middleware/rate-limiter.middleware.ts';
+import { resetRateLimit } from '@/core/middleware/rate-limiter';
 import {
   createBotClient,
   createMessageRouter,

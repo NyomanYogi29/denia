@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db, bookings, forceEvents, users } from '@/core/db';
 import { createBookingUseCase, cancelBookingUseCase } from '@/core/features/booking';
 import { ErrorCode } from '@/core/errors';
+import { getTomorrowIso, isoToDateString } from '@/core/utils';
 
 describe('Cancel Booking Use Case (src/core/features/booking/cancel-booking.usecase.ts)', () => {
   const kortiOwnerJid = '628123456789@s.whatsapp.net';
@@ -10,12 +11,9 @@ describe('Cancel Booking Use Case (src/core/features/booking/cancel-booking.usec
   const adminJid = '628999888777@s.whatsapp.net';
   const testRoomCode = 'RAK_2.1';
 
-  // Tanggal besok (H-1)
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowFormatted = `${String(tomorrow.getDate()).padStart(2, '0')}/${String(
-    tomorrow.getMonth() + 1
-  ).padStart(2, '0')}/${tomorrow.getFullYear()}`;
+  // Tanggal besok (H-1) terpusat WITA
+  const tomorrowIso = getTomorrowIso();
+  const tomorrowFormatted = (isoToDateString(tomorrowIso) as any).data ?? '14/09/2026';
 
   beforeEach(async () => {
     // Bersihkan data tes

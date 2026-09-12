@@ -7,4 +7,4 @@ export {
   type RateLimitCategory,
   type RateLimitOptions,
   type RateLimitResult,
-} from './rate-limiter.middleware.ts';
+} from './rate-limiter.ts';

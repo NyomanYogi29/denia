@@ -9,6 +9,7 @@ import { db, bookings, forceEvents, users } from '@/core/db';
 import { createBookingUseCase } from '@/core/features/booking';
 import { resetRateLimit } from '@/core/middleware';
 import { ReactionEmoji } from '@/core/templates';
+import { getTomorrowIso, isoToDateString } from '@/core/utils';
 
 function createMockMessage(options: {
   text?: string;
@@ -57,11 +58,8 @@ describe('WhatsApp Bot Cancel Command Consumer (Fase 5.2 - !batal)', () => {
   const testGroupJid = '120363028123456789@g.us';
   const testRoomCode = 'RAK_2.1';
 
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowFormatted = `${String(tomorrow.getDate()).padStart(2, '0')}/${String(
-    tomorrow.getMonth() + 1
-  ).padStart(2, '0')}/${tomorrow.getFullYear()}`;
+  const tomorrowIso = getTomorrowIso();
+  const tomorrowFormatted = (isoToDateString(tomorrowIso) as any).data ?? '14/09/2026';
 
   beforeEach(async () => {
     await db.delete(bookings).where(eq(bookings.roomCode, testRoomCode));

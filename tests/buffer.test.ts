@@ -1,5 +1,5 @@
 import { describe, expect, it, mock } from 'bun:test';
-import { BufferService, createBufferService } from '../src/core/services/buffer.service.ts';
+import { BufferService, createBufferService } from '../src/core/services/buffer.ts';
 import type { BatchBookingItem } from '../src/core/templates/index.ts';
 
 describe('BufferService (Fase 4: Micro-Batch Buffer)', () => {
