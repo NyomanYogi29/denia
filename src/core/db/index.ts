@@ -17,4 +17,5 @@ export { sqlite };
 // Re-export seluruh tabel, tipe, dan relasi
 export * from './schema.ts';
 export * from './repositories/index.ts';
+export * from './seed-admin.ts';
 

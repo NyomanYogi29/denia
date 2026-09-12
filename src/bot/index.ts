@@ -14,6 +14,7 @@ export {
 export {
   createPinjamCommandHandler,
   createBatalCommandHandler,
+  createInfoCommandHandler,
   registerDefaultBotCommands,
   type PinjamCommandOptions,
   type DefaultCommandsOptions,

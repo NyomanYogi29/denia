@@ -93,9 +93,10 @@ describe('Seeder Service & Phone Sanitizer Module', () => {
       }
 
       // Cleanup tabel users agar database kembali bersih
-      const { db } = await import('@/core/db');
+      const { db, ensureAdminUsers } = await import('@/core/db');
       const { users } = await import('@/core/db/schema.ts');
       await db.delete(users);
+      await ensureAdminUsers();
     });
   });
 

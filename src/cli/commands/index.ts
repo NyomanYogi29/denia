@@ -54,3 +54,13 @@ export {
   renderHeader as renderCancelHeader,
   type CancelActionOptions,
 } from './cancel/index.ts';
+
+export {
+  INFO_COMMAND,
+  INFO_OPTIONS,
+  executeInfo,
+  infoAction,
+  renderMatrixTerminal,
+  renderHeader as renderInfoHeader,
+  type InfoActionOptions,
+} from './info/index.ts';

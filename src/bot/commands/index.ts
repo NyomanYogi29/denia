@@ -5,8 +5,13 @@ import {
   type PinjamCommandOptions,
 } from './pinjam.command.ts';
 import { createBatalCommandHandler } from './batal.command.ts';
+import { createInfoCommandHandler } from './info.command.ts';
 
-export { createPinjamCommandHandler, createBatalCommandHandler };
+export {
+  createPinjamCommandHandler,
+  createBatalCommandHandler,
+  createInfoCommandHandler,
+};
 export type { PinjamCommandOptions };
 
 export interface DefaultCommandsOptions {
@@ -24,9 +29,14 @@ export function registerDefaultBotCommands(
     bufferService: options.bufferService,
   });
   const batalHandler = createBatalCommandHandler();
+  const infoHandler = createInfoCommandHandler();
 
   router.register('pinjam', pinjamHandler);
+  router.register('book', pinjamHandler);
   router.register('batal', batalHandler);
+  router.register('cancel', batalHandler);
+  router.register('info', infoHandler);
+  router.register('jadwal', infoHandler);
 
   return router;
 }

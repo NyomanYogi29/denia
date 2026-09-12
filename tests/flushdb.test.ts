@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it, afterAll } from 'bun:test';
 import { executeFlushDb } from '@/cli/commands/flushdb';
-import { db, rooms, users } from '@/core/db';
+import { db, rooms, users, ensureAdminUsers } from '@/core/db';
 import {
   flushDatabase,
   normalizeFlushTarget,
@@ -87,5 +87,9 @@ describe('Danger Zone: FlushDB Module', () => {
         expect(result.data.target).toBe('user');
       }
     });
+  });
+
+  afterAll(async () => {
+    await ensureAdminUsers();
   });
 });

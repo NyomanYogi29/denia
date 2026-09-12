@@ -149,6 +149,7 @@ export const createBotClient = (options: BotClientOptions = {}): BotClient => {
         printQRInTerminal: false,
         markOnlineOnConnect: true,
         generateHighQualityLinkPreview: false,
+        syncFullHistory: false,
       });
 
       currentSocket = sock;

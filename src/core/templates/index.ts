@@ -8,3 +8,11 @@ export {
   type BatchBookingItem,
   type BatchRecapOptions,
 } from './batch-recap.ts';
+export {
+  formatAvailabilityMatrix,
+  compressSlotList,
+  type AvailabilityMatrixData,
+  type RoomScheduleItem,
+  type RoomSlotStatus,
+  type SlotStatusType,
+} from './availability-matrix.ts';

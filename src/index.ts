@@ -1,4 +1,5 @@
 import { createBotClient, createMessageRouter, registerDefaultBotCommands } from '@/bot';
+import { ensureAdminUsers } from '@/core/db';
 import { createBufferService } from '@/core/services/buffer.service.ts';
 import { logger } from '@/core/logger';
 
@@ -9,6 +10,9 @@ const log = logger.child({ module: 'APP_ENTRYPOINT' });
 
 async function bootstrap(): Promise<void> {
   log.info('Memulai runtime Bot WhatsApp Denia...');
+
+  // Pastikan akun admin terdaftar permanen di database
+  await ensureAdminUsers();
 
   const client = createBotClient();
   const bufferService = createBufferService({

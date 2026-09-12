@@ -108,7 +108,7 @@
 - [x] **5.2 `!batal [kode_ruangan] [DD/MM/YYYY] [kode_slot]`**
   - Validasi kepemilikan slot berdasarkan WhatsApp JID pengirim atau role admin/staf.
   - Ubah status booking menjadi `cancelled`.
-- [ ] **5.3 `!info [DD/MM/YYYY]` atau `!info`**
+- [x] **5.3 `!info [DD/MM/YYYY]` atau `!info`**
   - Tampilkan matriks ketersediaan seluruh ruangan per slot SKS pada tanggal yang diminta.
 
 #### 🔸 Role Staf / Admin:
