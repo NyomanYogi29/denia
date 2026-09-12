@@ -1,4 +1,5 @@
-import { createBotClient, createMessageRouter } from '@/bot';
+import { createBotClient, createMessageRouter, registerDefaultBotCommands } from '@/bot';
+import { createBufferService } from '@/core/services/buffer.service.ts';
 import { logger } from '@/core/logger';
 
 export * from './core';
@@ -10,12 +11,18 @@ async function bootstrap(): Promise<void> {
   log.info('Memulai runtime Bot WhatsApp Denia...');
 
   const client = createBotClient();
+  const bufferService = createBufferService({
+    getSocket: () => client.getSocket(),
+  });
+
   const router = createMessageRouter();
+  registerDefaultBotCommands(router, { bufferService });
   router.attachToClient(client);
 
   // Daftarkan handler shutdown graceful
   const shutdown = async (signal: string) => {
     log.info(`Menerima sinyal ${signal}. Menutup koneksi WhatsApp dengan aman...`);
+    await bufferService.destroy();
     const disconnectResult = await client.disconnect();
     if (!disconnectResult.success) {
       log.error('Gagal saat memutus koneksi WhatsApp', disconnectResult.error);

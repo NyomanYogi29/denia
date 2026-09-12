@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type { RoomInfo } from '@/core/constants';
 import { checkSlotAvailability } from '@/core/db/repositories/booking.repository.ts';
 import {
@@ -16,8 +17,53 @@ import {
   type ParsedDate,
   type ParsedSlot,
 } from '@/core/utils';
+import { isValidWhatsAppJid, normalizeToWhatsAppJid } from '@/core/utils/jid.ts';
 
 const log = logger.child({ module: 'BOOKING_VALIDATOR' });
+
+/**
+ * Zod schema untuk validasi input peminjaman ruangan dari pengguna (WhatsApp Bot atau CLI).
+ */
+export const createBookingInputSchema = z.object({
+  roomCode: z
+    .string()
+    .trim()
+    .min(1, 'Kode ruangan wajib diisi')
+    .transform((val) => val.toUpperCase()),
+  date: z
+    .string()
+    .trim()
+    .min(1, 'Tanggal peminjaman wajib diisi'),
+  slotCode: z
+    .string()
+    .trim()
+    .min(1, 'Kode slot wajib diisi')
+    .transform((val) => val.toUpperCase()),
+  userJid: z
+    .string()
+    .trim()
+    .min(1, 'Nomor WhatsApp atau JID peminjam wajib diisi')
+    .refine((val) => isValidWhatsAppJid(val), {
+      message:
+        'Format nomor WhatsApp tidak valid. Masukkan nomor telepon (contoh: 08123456789 atau 628123456789) atau JID (628xxx@s.whatsapp.net).',
+    })
+    .transform((val) => normalizeToWhatsAppJid(val)),
+  userRole: z
+    .enum(['korti', 'staff', 'admin'] as const)
+    .default('korti'),
+  bookingType: z
+    .enum(['regular', 'adhoc', 'institutional'] as const)
+    .default('adhoc'),
+  notes: z
+    .string()
+    .trim()
+    .max(255, 'Catatan maksimal 255 karakter')
+    .optional()
+    .nullable(),
+});
+
+export type CreateBookingInput = z.infer<typeof createBookingInputSchema>;
+export type CreateBookingRawInput = z.input<typeof createBookingInputSchema>;
 
 export interface BookingValidationInput {
   readonly roomCodeRaw: string;

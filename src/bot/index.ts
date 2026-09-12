@@ -11,6 +11,12 @@ export {
   dispatchRejection,
   dispatchDirectError,
 } from './responder.ts';
+export {
+  createPinjamCommandHandler,
+  registerDefaultBotCommands,
+  type PinjamCommandOptions,
+  type DefaultCommandsOptions,
+} from './commands/index.ts';
 export type {
   AuthMode,
   BotClient,

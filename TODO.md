@@ -99,7 +99,7 @@
 ### 🔹 Fase 5: Implementasi Modul Perintah (Command Handlers)
 
 #### 🔸 Role Mahasiswa / Korti:
-- [ ] **5.1 `!pinjam [kode_ruangan] [DD/MM/YYYY] [kode_slot]`**
+- [x] **5.1 `!pinjam [kode_ruangan] [DD/MM/YYYY] [kode_slot]`**
   - Auto-resolution pengguna via JID pengirim (tanpa input NIM/nama).
   - Validasi aturan minimal H-1 dari hari pemakaian.
   - Validasi slot alfabetik kontigu & ketersediaan slot (cek booking aktif dan force event).

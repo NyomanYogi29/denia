@@ -9,9 +9,11 @@ import {
   executeFlushDb,
   executeSeedKorti,
   executeUserAdd,
+  executeBook,
   FLUSHDB_OPTIONS,
   SEED_KORTI_OPTIONS,
   USER_ADD_OPTIONS,
+  BOOK_OPTIONS,
 } from '@/cli/commands';
 import {
   CliCommandNotFoundError,
@@ -28,6 +30,7 @@ function printHelp(): void {
   console.log(chalk.bold('PERINTAH YANG TERSEDIA:'));
   console.log('  user add              Mendaftarkan pengguna baru (korti, staff, admin) ke whitelist');
   console.log('  seed korti            Mengimpor data Korti dari master spreadsheet Excel ke database');
+  console.log('  book, pinjam          Meminjam ruangan kuliah SDP Undiksha (Fase 5.1)');
   console.log(`  ${chalk.red('flushdb <target>')}      ${chalk.bold.red('[DANGER ZONE]')} Menghapus data tabel (all, user, rooms, force_events, bookings)`);
   console.log('  help                  Menampilkan pesan bantuan ini\n');
   console.log(chalk.bold('OPSI GLOBAL:'));
@@ -40,6 +43,8 @@ function printHelp(): void {
   console.log('  denia user add --jid 08123456789 --nama "Budi" --kelas "PTI 4A" --prodi "PTI"');
   console.log('  denia seed korti');
   console.log('  denia seed korti --dry-run');
+  console.log('  denia book RAK_2.1 15/10/2026 DEF --jid 08123456789');
+  console.log('  denia pinjam --interactive');
   console.log('  denia flushdb user');
   console.log('  denia flushdb all --force\n');
 }
@@ -66,6 +71,7 @@ async function main(): Promise<void> {
     ...USER_ADD_OPTIONS,
     ...SEED_KORTI_OPTIONS,
     ...FLUSHDB_OPTIONS,
+    ...BOOK_OPTIONS,
   };
 
   const { values, positionals } = parseArgs({
@@ -95,6 +101,14 @@ async function main(): Promise<void> {
 
   if ((firstPos === 'seed' && secondPos === 'korti') || firstPos === 'seed:korti') {
     const result = await executeSeedKorti(values, runtimeConfig);
+    if (!result.success) {
+      handleCliError(result.error);
+    }
+    process.exit(0);
+  }
+
+  if (firstPos === 'book' || firstPos === 'pinjam') {
+    const result = await executeBook(values, runtimeConfig, positionals);
     if (!result.success) {
       handleCliError(result.error);
     }

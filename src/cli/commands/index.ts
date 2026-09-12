@@ -32,3 +32,14 @@ export {
   renderFlushSuccess,
   type FlushDbActionOptions,
 } from './flushdb/index.ts';
+
+export {
+  BOOK_COMMAND,
+  BOOK_OPTIONS,
+  executeBook,
+  bookAction,
+  promptBookInteractive,
+  renderSuccess as renderBookSuccess,
+  renderHeader as renderBookHeader,
+  type BookActionOptions,
+} from './book/index.ts';
