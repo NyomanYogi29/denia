@@ -69,6 +69,16 @@ export async function dispatchSuccess(
 }
 
 /**
+ * Memperbarui reaksi emoji menjadi pesan terkirim ke DM (📩) pada pesan grup
+ */
+export async function dispatchDmSent(
+  sock: WASocket,
+  key: proto.IMessageKey
+): Promise<Result<void, AppError>> {
+  return dispatchReaction(sock, key, ReactionEmoji.DM_SENT);
+}
+
+/**
  * Mengirim pesan kesalahan / penolakan terformat langsung ke nomor pribadi pengirim (DM / Japri)
  */
 export async function dispatchDirectError(

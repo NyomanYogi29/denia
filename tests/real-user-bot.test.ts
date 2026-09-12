@@ -163,16 +163,22 @@ describe('Real User WhatsApp Bot Test Cases (Admin, Korti & Unregistered)', () =
 
       await router.handleMessage(msg, mockSock);
 
-      // Emoji sukses
+      // Emoji DM_SENT (📩) di grup
       const reactions = mockSock.sentMessages.filter((m) => m.content.react?.text);
-      expect(reactions[reactions.length - 1]!.content.react.text).toBe(ReactionEmoji.SUCCESS);
+      expect(reactions[reactions.length - 1]!.content.react.text).toBe(ReactionEmoji.DM_SENT);
 
-      // Pesan matriks terkirim ke grup
+      // Grup bersih tanpa pesan matriks
       const groupMessages = mockSock.sentMessages.filter(
         (m) => m.jid === groupJid && typeof m.content.text === 'string'
       );
-      expect(groupMessages.length).toBe(1);
-      expect(groupMessages[0]!.content.text).toContain('MATRIKS KETERSEDIAAN RUANGAN SDP UNDIKSHA');
+      expect(groupMessages.length).toBe(0);
+
+      // Pesan matriks terkirim langsung ke DM admin
+      const dmMessages = mockSock.sentMessages.filter(
+        (m) => m.jid === adminJid && typeof m.content.text === 'string'
+      );
+      expect(dmMessages.length).toBe(1);
+      expect(dmMessages[0]!.content.text).toContain('MATRIKS KETERSEDIAAN RUANGAN SDP UNDIKSHA');
     });
 
     it('should allow Admin to book on the same day (Hari H) using Staff/Admin privilege', async () => {
@@ -366,16 +372,22 @@ describe('Real User WhatsApp Bot Test Cases (Admin, Korti & Unregistered)', () =
 
       await router.handleMessage(msg, mockSock);
 
-      // Reaksi sukses ✅
+      // Reaksi DM_SENT 📩
       const reactions = mockSock.sentMessages.filter((m) => m.content.react?.text);
-      expect(reactions[reactions.length - 1]!.content.react.text).toBe(ReactionEmoji.SUCCESS);
+      expect(reactions[reactions.length - 1]!.content.react.text).toBe(ReactionEmoji.DM_SENT);
 
-      // Jadwal terkirim
+      // Grup bersih
       const groupMessages = mockSock.sentMessages.filter(
         (m) => m.jid === groupJid && typeof m.content.text === 'string'
       );
-      expect(groupMessages.length).toBe(1);
-      expect(groupMessages[0]!.content.text).toContain('MATRIKS KETERSEDIAAN RUANGAN SDP UNDIKSHA');
+      expect(groupMessages.length).toBe(0);
+
+      // Jadwal terkirim ke DM
+      const dmMessages = mockSock.sentMessages.filter(
+        (m) => m.jid === strangerJid && typeof m.content.text === 'string'
+      );
+      expect(dmMessages.length).toBe(1);
+      expect(dmMessages[0]!.content.text).toContain('MATRIKS KETERSEDIAAN RUANGAN SDP UNDIKSHA');
     });
   });
 

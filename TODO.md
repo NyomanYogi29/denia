@@ -120,8 +120,9 @@
 - [ ] **E.3 Sinkronisasi Status Booking pada Tampilan Matriks `!info`**
   - Masalah: Ruangan berhasil dipinjam via `!pinjam`, namun saat `!info` dijalankan semua status ruangan masih tampil hijau (seolah belum ada yang dibooking).
   - Evaluasi: Investigasi mapping slot/tanggal antara tabel `bookings` dan query ketersediaan di `availability.repository.ts`.
-- [ ] **E.4 Routing Output Matriks `!info` ke Jalur Pribadi (DM)**
-  - Masalah/Kebutuhan: Output matriks `!info` saat ini memenuhi chat grup; ubah pengiriman hasil matriks `!info` agar dikirim ke DM pribadi korti/pemohon (grup hanya menerima respons ringkas bila dipanggil di grup).
+- [x] **E.4 Routing Output Matriks `!info` ke Jalur Pribadi (DM)**
+  - Status: *Sudah terimplementasi & teruji (Completed)*.
+  - Seluruh pemanggilan perintah `!info` (baik umum maupun spesifik ruangan/tanggal) di dalam grup WhatsApp secara otomatis merouting pesan matriks ketersediaan lengkap ke DM pribadi pengguna (`senderJid`), dengan reaksi emoji `📩` (DM_SENT) pada pesan pemicu di grup tanpa mengirim balasan teks di grup. Jika dipanggil di DM langsung, bot merespons dengan reaksi `✅`. Apabila pengiriman DM gagal, bot memberi reaksi `❌` dan mengirim notifikasi fallback 1 baris di grup.
 - [x] **E.5 Proteksi Otorisasi Pembatalan (`!batal` / `!cancel`) Antar-Korti**
   - Status: *Sudah terimplementasi & terverifikasi (Verified)*.
   - Guard kepemilikan sudah aktif di `cancelBookingImmediate` (`user_jid` check) dan `cancelBookingUseCase` (hanya pemilik asli atau admin/staf yang berhak membatalkan). Upaya pembatalan oleh pengguna lain otomatis ditolak dengan reaksi emoji ❌ di grup dan notifikasi edukatif dikirim via DM/Japri.

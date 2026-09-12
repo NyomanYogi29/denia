@@ -47,11 +47,11 @@ function createMockSocket(): WASocket & {
   return mockSock;
 }
 
-describe('WhatsApp Bot Info Command Consumer (Fase 5.3 - !info)', () => {
+describe('WhatsApp Bot Info Command Consumer (Fase 5.3 & Evaluasi E.4 - !info Routing to DM)', () => {
   const testSenderJid = '628123456789@s.whatsapp.net';
   const testGroupJid = '120363028123456789@g.us';
 
-  it('should process !info with no arguments and send availability message', async () => {
+  it('should process !info in group, react with 📩, send matrix to DM, and keep group clean', async () => {
     const router = registerDefaultBotCommands(createMessageRouter());
     const mockSock = createMockSocket();
 
@@ -59,25 +59,32 @@ describe('WhatsApp Bot Info Command Consumer (Fase 5.3 - !info)', () => {
       text: '!info',
       senderJid: testSenderJid,
       chatJid: testGroupJid,
+      isGroup: true,
     });
 
     await router.handleMessage(msg, mockSock);
 
-    // Reaksi awal '⏳' lalu '✅'
+    // Reaksi awal '⏳' lalu '📩' (DM_SENT)
     const reactions = mockSock.sentMessages.filter((m) => m.content.react?.text);
     expect(reactions.length).toBeGreaterThanOrEqual(2);
     expect(reactions[0]!.content.react.text).toBe(ReactionEmoji.PROCESSING);
-    expect(reactions[reactions.length - 1]!.content.react.text).toBe(ReactionEmoji.SUCCESS);
+    expect(reactions[reactions.length - 1]!.content.react.text).toBe(ReactionEmoji.DM_SENT);
 
-    // Pesan matriks dikirimkan ke grup chat
-    const chatMessages = mockSock.sentMessages.filter(
+    // Grup TIDAK menerima pesan teks balasan sama sekali (bersih)
+    const groupMessages = mockSock.sentMessages.filter(
       (m) => m.jid === testGroupJid && typeof m.content.text === 'string'
     );
-    expect(chatMessages.length).toBe(1);
-    expect(chatMessages[0]!.content.text).toContain('MATRIKS KETERSEDIAAN RUANGAN SDP UNDIKSHA');
+    expect(groupMessages.length).toBe(0);
+
+    // Pesan matriks dikirimkan langsung ke DM pribadi pengirim
+    const dmMessages = mockSock.sentMessages.filter(
+      (m) => m.jid === testSenderJid && typeof m.content.text === 'string'
+    );
+    expect(dmMessages.length).toBe(1);
+    expect(dmMessages[0]!.content.text).toContain('MATRIKS KETERSEDIAAN RUANGAN SDP UNDIKSHA');
   });
 
-  it('should process !info with specific date parameter', async () => {
+  it('should process !info with specific date parameter in group and route to DM', async () => {
     const router = registerDefaultBotCommands(createMessageRouter());
     const mockSock = createMockSocket();
 
@@ -85,18 +92,30 @@ describe('WhatsApp Bot Info Command Consumer (Fase 5.3 - !info)', () => {
       text: '!info 25/11/2026',
       senderJid: testSenderJid,
       chatJid: testGroupJid,
+      isGroup: true,
     });
 
     await router.handleMessage(msg, mockSock);
 
-    const chatMessages = mockSock.sentMessages.filter(
+    // Reaksi 📩
+    const reactions = mockSock.sentMessages.filter((m) => m.content.react?.text);
+    expect(reactions[reactions.length - 1]!.content.react.text).toBe(ReactionEmoji.DM_SENT);
+
+    // Tidak ada pesan di grup
+    const groupMessages = mockSock.sentMessages.filter(
       (m) => m.jid === testGroupJid && typeof m.content.text === 'string'
     );
-    expect(chatMessages.length).toBe(1);
-    expect(chatMessages[0]!.content.text).toContain('25/11/2026');
+    expect(groupMessages.length).toBe(0);
+
+    // Pesan di DM
+    const dmMessages = mockSock.sentMessages.filter(
+      (m) => m.jid === testSenderJid && typeof m.content.text === 'string'
+    );
+    expect(dmMessages.length).toBe(1);
+    expect(dmMessages[0]!.content.text).toContain('25/11/2026');
   });
 
-  it('should process !info with specific room code and date', async () => {
+  it('should process !info with specific room code in group and route to DM', async () => {
     const router = registerDefaultBotCommands(createMessageRouter());
     const mockSock = createMockSocket();
 
@@ -104,16 +123,81 @@ describe('WhatsApp Bot Info Command Consumer (Fase 5.3 - !info)', () => {
       text: '!info RAK_2.1 25/11/2026',
       senderJid: testSenderJid,
       chatJid: testGroupJid,
+      isGroup: true,
     });
 
     await router.handleMessage(msg, mockSock);
 
-    const chatMessages = mockSock.sentMessages.filter(
-      (m) => m.jid === testGroupJid && typeof m.content.text === 'string'
+    // Reaksi 📩
+    const reactions = mockSock.sentMessages.filter((m) => m.content.react?.text);
+    expect(reactions[reactions.length - 1]!.content.react.text).toBe(ReactionEmoji.DM_SENT);
+
+    // DM menerima info ruangan spesifik
+    const dmMessages = mockSock.sentMessages.filter(
+      (m) => m.jid === testSenderJid && typeof m.content.text === 'string'
     );
-    expect(chatMessages.length).toBe(1);
-    expect(chatMessages[0]!.content.text).toContain('RAK_2.1');
-    expect(chatMessages[0]!.content.text).not.toContain('KHD_2.2');
+    expect(dmMessages.length).toBe(1);
+    expect(dmMessages[0]!.content.text).toContain('RAK_2.1');
+    expect(dmMessages[0]!.content.text).not.toContain('KHD_2.2');
+  });
+
+  it('should process !info in direct chat (DM), react with ✅, and send matrix directly in DM', async () => {
+    const router = registerDefaultBotCommands(createMessageRouter());
+    const mockSock = createMockSocket();
+
+    const msg = createMockMessage({
+      text: '!info',
+      senderJid: testSenderJid,
+      chatJid: testSenderJid,
+      isGroup: false,
+    });
+
+    await router.handleMessage(msg, mockSock);
+
+    // Reaksi akhir di chat pribadi adalah '✅' (SUCCESS)
+    const reactions = mockSock.sentMessages.filter((m) => m.content.react?.text);
+    expect(reactions[reactions.length - 1]!.content.react.text).toBe(ReactionEmoji.SUCCESS);
+
+    // Pesan matriks dikirim langsung ke chat pribadi tersebut
+    const dmMessages = mockSock.sentMessages.filter(
+      (m) => m.jid === testSenderJid && typeof m.content.text === 'string'
+    );
+    expect(dmMessages.length).toBe(1);
+    expect(dmMessages[0]!.content.text).toContain('MATRIKS KETERSEDIAAN RUANGAN SDP UNDIKSHA');
+  });
+
+  it('should handle DM failure when called in group by reacting with ❌ and sending fallback to group', async () => {
+    const router = registerDefaultBotCommands(createMessageRouter());
+    const mockSock = createMockSocket();
+
+    // Mock sendMessage agar melempar error saat mengirim ke DM testSenderJid
+    const originalSendMessage = mockSock.sendMessage;
+    mockSock.sendMessage = async (jid: string, content: any) => {
+      if (jid === testSenderJid && content.text?.includes('MATRIKS')) {
+        throw new Error('DM blocked by privacy settings');
+      }
+      return originalSendMessage(jid, content);
+    };
+
+    const msg = createMockMessage({
+      text: '!info',
+      senderJid: testSenderJid,
+      chatJid: testGroupJid,
+      isGroup: true,
+    });
+
+    await router.handleMessage(msg, mockSock);
+
+    // Reaksi akhir di pesan grup adalah '❌'
+    const reactions = mockSock.sentMessages.filter((m) => m.content.react?.text);
+    expect(reactions[reactions.length - 1]!.content.react.text).toBe(ReactionEmoji.FAILED);
+
+    // Grup menerima fallback notifikasi 1 baris
+    const fallbackMessages = mockSock.sentMessages.filter(
+      (m) => m.jid === testGroupJid && typeof m.content.text === 'string' && m.content.text.includes('Gagal mengirim matriks')
+    );
+    expect(fallbackMessages.length).toBe(1);
+    expect(fallbackMessages[0]!.content.mentions).toContain(testSenderJid);
   });
 
   it('should reject invalid date format with error reaction and DM', async () => {
@@ -124,6 +208,7 @@ describe('WhatsApp Bot Info Command Consumer (Fase 5.3 - !info)', () => {
       text: '!info 2026-11-25', // format salah
       senderJid: testSenderJid,
       chatJid: testGroupJid,
+      isGroup: true,
     });
 
     await router.handleMessage(msg, mockSock);
