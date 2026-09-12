@@ -13,6 +13,7 @@ export {
 } from './responder.ts';
 export {
   createPinjamCommandHandler,
+  createBatalCommandHandler,
   registerDefaultBotCommands,
   type PinjamCommandOptions,
   type DefaultCommandsOptions,

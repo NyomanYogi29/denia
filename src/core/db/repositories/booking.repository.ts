@@ -8,10 +8,11 @@ import {
   type BookingType,
 } from '@/core/db/schema.ts';
 import {
+  AppError,
   DatabaseError,
-  SlotConflictError,
-  type AppError,
   ErrorCode,
+  NotFoundError,
+  SlotConflictError,
   ValidationError,
 } from '@/core/errors';
 import { logger } from '@/core/logger';
@@ -232,6 +233,135 @@ export async function createBookingImmediate(
     return err(
       new DatabaseError(
         'Gagal mencatat pemesanan ruangan pada database.',
+        { params },
+        error
+      )
+    );
+  }
+}
+
+export interface CancelBookingParams {
+  readonly roomCode: string;
+  readonly bookingDate: string; // ISO 'YYYY-MM-DD'
+  readonly slotCodes: readonly string[]; // e.g. ['D', 'E', 'F']
+  readonly userJid: string;
+  readonly isStaffOrAdmin?: boolean;
+}
+
+/**
+ * Membatalkan peminjaman ruangan yang aktif dengan transaksi atomik SQLite (BEGIN IMMEDIATE).
+ * Memvalidasi kepemilikan peminjaman (hanya pemilik atau admin/staf yang berhak membatalkan).
+ */
+export async function cancelBookingImmediate(
+  params: CancelBookingParams
+): Promise<Result<Booking[], AppError>> {
+  const { roomCode, bookingDate, slotCodes, userJid, isStaffOrAdmin = false } = params;
+
+  if (slotCodes.length === 0) {
+    return err(
+      new ValidationError(ErrorCode.INVALID_SLOT_FORMAT, 'Daftar kode slot untuk pembatalan tidak boleh kosong.')
+    );
+  }
+
+  const normalizedSlots = slotCodes.map((s) => s.toUpperCase());
+
+  try {
+    const transaction = sqlite.transaction(() => {
+      // 1. Ambil data booking aktif pada slot, ruangan, dan tanggal yang bersangkutan
+      const placeholders = normalizedSlots.map(() => '?').join(',');
+      const activeBookings = sqlite
+        .query(
+          `SELECT id, room_code, booking_date, slot_code, user_jid, status 
+           FROM bookings 
+           WHERE room_code = ? AND booking_date = ? AND status = 'active' 
+           AND slot_code IN (${placeholders})`
+        )
+        .all(roomCode, bookingDate, ...normalizedSlots) as Array<{
+          id: number;
+          room_code: string;
+          booking_date: string;
+          slot_code: string;
+          user_jid: string;
+          status: string;
+        }>;
+
+      if (activeBookings.length === 0) {
+        throw new NotFoundError(
+          ErrorCode.BOOKING_NOT_FOUND,
+          `Tidak ditemukan peminjaman aktif untuk ruangan ${roomCode} pada tanggal ${bookingDate} (slot ${normalizedSlots.join('')}).`,
+          { roomCode, bookingDate, slotCodes: normalizedSlots }
+        );
+      }
+
+      const foundSlotCodes = activeBookings.map((b) => b.slot_code.toUpperCase());
+      const missingSlots = normalizedSlots.filter((s) => !foundSlotCodes.includes(s));
+      if (missingSlots.length > 0) {
+        throw new NotFoundError(
+          ErrorCode.BOOKING_NOT_FOUND,
+          `Peminjaman aktif untuk slot ${missingSlots.join('')} pada ruangan ${roomCode} (${bookingDate}) tidak ditemukan atau sudah dibatalkan sebelumnya.`,
+          { missingSlots, foundSlots: foundSlotCodes }
+        );
+      }
+
+      // 2. Validasi kepemilikan: pengguna biasa hanya boleh membatalkan booking miliknya sendiri
+      if (!isStaffOrAdmin) {
+        const notOwned = activeBookings.filter((b) => b.user_jid !== userJid);
+        if (notOwned.length > 0) {
+          throw new AppError({
+            code: ErrorCode.NOT_BOOKING_OWNER,
+            userMessage: `Anda tidak memiliki izin membatalkan slot ${notOwned.map((b) => b.slot_code).join('')}. Peminjaman ini dibuat oleh pengguna lain.`,
+            metadata: {
+              notOwnedSlots: notOwned.map((b) => b.slot_code),
+              userJid,
+            },
+          });
+        }
+      }
+
+      // 3. Lakukan pembatalan (update status menjadi 'cancelled')
+      const bookingIds = activeBookings.map((b) => b.id);
+      const updatePlaceholders = bookingIds.map(() => '?').join(',');
+      sqlite
+        .query(`UPDATE bookings SET status = 'cancelled' WHERE id IN (${updatePlaceholders})`)
+        .run(...bookingIds);
+
+      return bookingIds;
+    });
+
+    const cancelledIds = transaction.immediate();
+
+    // Query hasil pembaruan via Drizzle
+    const cancelledRows = await db
+      .select()
+      .from(bookings)
+      .where(inArray(bookings.id, cancelledIds))
+      .all();
+
+    log.info(`Berhasil membatalkan ${cancelledRows.length} slot peminjaman untuk ruangan ${roomCode} (${bookingDate})`, {
+      roomCode,
+      bookingDate,
+      slots: normalizedSlots,
+      userJid,
+      isStaffOrAdmin,
+    });
+
+    return ok(cancelledRows);
+  } catch (error) {
+    if (
+      error instanceof NotFoundError ||
+      (error instanceof AppError && error.code === ErrorCode.NOT_BOOKING_OWNER)
+    ) {
+      log.warn('Pembatalan peminjaman ruangan ditolak', {
+        code: (error as any).code,
+        message: (error as Error).message,
+      });
+      return err(error as AppError);
+    }
+
+    log.error('Terjadi kesalahan database saat membatalkan peminjaman dengan BEGIN IMMEDIATE', error);
+    return err(
+      new DatabaseError(
+        'Gagal membatalkan pemesanan ruangan pada database.',
         { params },
         error
       )

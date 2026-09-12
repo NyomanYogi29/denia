@@ -65,6 +65,38 @@ export const createBookingInputSchema = z.object({
 export type CreateBookingInput = z.infer<typeof createBookingInputSchema>;
 export type CreateBookingRawInput = z.input<typeof createBookingInputSchema>;
 
+/**
+ * Zod schema untuk validasi input pembatalan peminjaman ruangan dari pengguna.
+ */
+export const cancelBookingInputSchema = z.object({
+  roomCode: z
+    .string()
+    .trim()
+    .min(1, 'Kode ruangan wajib diisi')
+    .transform((val) => val.toUpperCase()),
+  date: z
+    .string()
+    .trim()
+    .min(1, 'Tanggal peminjaman wajib diisi'),
+  slotCode: z
+    .string()
+    .trim()
+    .min(1, 'Kode slot wajib diisi')
+    .transform((val) => val.toUpperCase()),
+  userJid: z
+    .string()
+    .trim()
+    .min(1, 'Nomor WhatsApp atau JID pemohon pembatalan wajib diisi')
+    .refine((val) => isValidWhatsAppJid(val), {
+      message:
+        'Format nomor WhatsApp tidak valid. Masukkan nomor telepon (contoh: 08123456789 atau 628123456789) atau JID (628xxx@s.whatsapp.net).',
+    })
+    .transform((val) => normalizeToWhatsAppJid(val)),
+});
+
+export type CancelBookingInput = z.infer<typeof cancelBookingInputSchema>;
+export type CancelBookingRawInput = z.input<typeof cancelBookingInputSchema>;
+
 export interface BookingValidationInput {
   readonly roomCodeRaw: string;
   readonly dateRaw: string; // DD/MM/YYYY

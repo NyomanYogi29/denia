@@ -10,10 +10,12 @@ import {
   executeSeedKorti,
   executeUserAdd,
   executeBook,
+  executeCancel,
   FLUSHDB_OPTIONS,
   SEED_KORTI_OPTIONS,
   USER_ADD_OPTIONS,
   BOOK_OPTIONS,
+  CANCEL_OPTIONS,
 } from '@/cli/commands';
 import {
   CliCommandNotFoundError,
@@ -31,6 +33,7 @@ function printHelp(): void {
   console.log('  user add              Mendaftarkan pengguna baru (korti, staff, admin) ke whitelist');
   console.log('  seed korti            Mengimpor data Korti dari master spreadsheet Excel ke database');
   console.log('  book, pinjam          Meminjam ruangan kuliah SDP Undiksha (Fase 5.1)');
+  console.log('  cancel, batal         Membatalkan peminjaman ruangan kuliah SDP Undiksha (Fase 5.2)');
   console.log(`  ${chalk.red('flushdb <target>')}      ${chalk.bold.red('[DANGER ZONE]')} Menghapus data tabel (all, user, rooms, force_events, bookings)`);
   console.log('  help                  Menampilkan pesan bantuan ini\n');
   console.log(chalk.bold('OPSI GLOBAL:'));
@@ -44,7 +47,9 @@ function printHelp(): void {
   console.log('  denia seed korti');
   console.log('  denia seed korti --dry-run');
   console.log('  denia book RAK_2.1 15/10/2026 DEF --jid 08123456789');
+  console.log('  denia cancel RAK_2.1 15/10/2026 DEF --jid 08123456789');
   console.log('  denia pinjam --interactive');
+  console.log('  denia batal --interactive');
   console.log('  denia flushdb user');
   console.log('  denia flushdb all --force\n');
 }
@@ -72,6 +77,7 @@ async function main(): Promise<void> {
     ...SEED_KORTI_OPTIONS,
     ...FLUSHDB_OPTIONS,
     ...BOOK_OPTIONS,
+    ...CANCEL_OPTIONS,
   };
 
   const { values, positionals } = parseArgs({
@@ -109,6 +115,14 @@ async function main(): Promise<void> {
 
   if (firstPos === 'book' || firstPos === 'pinjam') {
     const result = await executeBook(values, runtimeConfig, positionals);
+    if (!result.success) {
+      handleCliError(result.error);
+    }
+    process.exit(0);
+  }
+
+  if (firstPos === 'cancel' || firstPos === 'batal') {
+    const result = await executeCancel(values, runtimeConfig, positionals);
     if (!result.success) {
       handleCliError(result.error);
     }

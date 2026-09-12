@@ -105,7 +105,7 @@
   - Validasi slot alfabetik kontigu & ketersediaan slot (cek booking aktif dan force event).
   - Eksekusi transaksi SQLite dengan `BEGIN IMMEDIATE`.
   - Masukkan transaksi sukses ke *micro-batch buffer*.
-- [ ] **5.2 `!batal [kode_ruangan] [DD/MM/YYYY] [kode_slot]`**
+- [x] **5.2 `!batal [kode_ruangan] [DD/MM/YYYY] [kode_slot]`**
   - Validasi kepemilikan slot berdasarkan WhatsApp JID pengirim atau role admin/staf.
   - Ubah status booking menjadi `cancelled`.
 - [ ] **5.3 `!info [DD/MM/YYYY]` atau `!info`**
