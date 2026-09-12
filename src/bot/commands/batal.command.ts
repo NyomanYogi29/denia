@@ -68,7 +68,16 @@ export function createBatalCommandHandler(): CommandHandler {
     // 3. Perbarui reaksi emoji sumber menjadi sukses (✅)
     await dispatchSuccess(sock, ctx.messageKey);
 
-    // 4. Kirim notifikasi konfirmasi pembatalan ke chat tempat perintah dikirim
+    // 4. Jika pembatalan ini adalah duplikat idempoten milik pengguna sendiri:
+    // Cukup perbarui reaksi menjadi ✅ tanpa mengirim pesan chat pembatalan ulang
+    if (cancelled.isDuplicate) {
+      log.info(
+        `Pembatalan duplikat idempoten terdeteksi untuk ${ctx.senderJid} pada ruangan ${cancelled.room.code} (${cancelled.slot.raw}); hanya merespons reaksi ✅ tanpa chat.`
+      );
+      return;
+    }
+
+    // 5. Kirim notifikasi konfirmasi pembatalan ke chat tempat perintah dikirim
     const roleNotice = cancelled.isStaffOrAdmin && cancelled.user.jid !== cancelled.cancelledBookings[0]?.userJid
       ? ` (dibatalkan oleh ${cancelled.user.role}: *${cancelled.user.nama}*)`
       : '';

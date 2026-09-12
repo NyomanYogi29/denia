@@ -5,7 +5,10 @@ import { normalizeToWhatsAppJid } from '@/core/utils/index.ts';
 
 const log = logger.child({ module: 'RATE_LIMITER_MIDDLEWARE' });
 
+export type RateLimitCategory = 'action' | 'info';
+
 export interface RateLimitOptions {
+  readonly category?: RateLimitCategory;
   readonly maxRequests?: number;
   readonly windowSeconds?: number;
 }
@@ -19,17 +22,39 @@ export interface RateLimitResult {
 }
 
 /**
- * Membentuk key Redis untuk pelacakan batas laju perintah pengguna berdasarkan JID.
+ * Menentukan kategori rate limit berdasarkan nama perintah (command).
+ * - 'action': Perintah eksekusi mutasi jadwal/ruangan (pinjam, book, batal, cancel)
+ * - 'info': Perintah pembacaan informasi/jadwal (info, jadwal, dan lainnya)
  */
-export function getRateLimitKey(jid: string): string {
+export function resolveRateLimitCategory(command: string): RateLimitCategory {
+  const normalized = command.toLowerCase().trim();
+  switch (normalized) {
+    case 'pinjam':
+    case 'book':
+    case 'batal':
+    case 'cancel':
+      return 'action';
+    case 'info':
+    case 'jadwal':
+    default:
+      return 'info';
+  }
+}
+
+/**
+ * Membentuk key Redis untuk pelacakan batas laju perintah pengguna berdasarkan JID dan kategori.
+ */
+export function getRateLimitKey(jid: string, category?: RateLimitCategory | string): string {
   let normalizedJid: string;
   try {
     normalizedJid = normalizeToWhatsAppJid(jid);
   } catch {
     normalizedJid = jid.trim();
   }
-  return `ratelimit:user:${normalizedJid}`;
+  const cat = category ?? 'user';
+  return `ratelimit:${cat}:${normalizedJid}`;
 }
+
 let isRedisDownWarnLogged = false;
 
 /**
@@ -43,8 +68,9 @@ export function resetRedisDownWarnState(): void {
  * Middleware untuk memvalidasi batas laju (Rate Limiting) perintah per user WhatsApp.
  * Menggunakan algoritma Fixed Window Counter berbasis Redis INCR & EXPIRE.
  *
- * Kebijakan:
- * - Standar: 7 perintah per 60 detik per user.
+ * Kebijakan Tier:
+ * - Action (pinjam/batal): 1 perintah per 5 detik per user (cegah double booking / race condition).
+ * - Info (info/jadwal): 10 perintah per 60 detik per user.
  * - Fail-open: Jika Redis mengalami gangguan/offline, sistem tetap mengizinkan perintah (allowed: true)
  *   agar operasional kampus tidak terhenti, dengan mencatat peringatan secara terukur (throttled).
  */
@@ -52,9 +78,24 @@ export async function checkRateLimit(
   jid: string,
   options?: RateLimitOptions
 ): Promise<RateLimitResult> {
-  const maxRequests = options?.maxRequests ?? config.redis.rateLimitMaxRequests;
-  const windowSeconds = options?.windowSeconds ?? config.redis.rateLimitWindowSeconds;
-  const key = getRateLimitKey(jid);
+  const category = options?.category;
+  let defaultMax = config.redis.rateLimitInfoMaxRequests;
+  let defaultWindow = config.redis.rateLimitInfoWindowSeconds;
+
+  if (category === 'action') {
+    defaultMax = config.redis.rateLimitActionMaxRequests;
+    defaultWindow = config.redis.rateLimitActionWindowSeconds;
+  } else if (category === 'info') {
+    defaultMax = config.redis.rateLimitInfoMaxRequests;
+    defaultWindow = config.redis.rateLimitInfoWindowSeconds;
+  } else if (config.redis.rateLimitMaxRequests) {
+    defaultMax = config.redis.rateLimitMaxRequests;
+    defaultWindow = config.redis.rateLimitWindowSeconds;
+  }
+
+  const maxRequests = options?.maxRequests ?? defaultMax;
+  const windowSeconds = options?.windowSeconds ?? defaultWindow;
+  const key = getRateLimitKey(jid, category ?? 'user');
 
   // 1. Tambahkan hitungan hit pada Redis
   const incrResult = await redisIncr(key);
@@ -114,6 +155,7 @@ export async function checkRateLimit(
 
     log.warn(`Rate limit terlampaui untuk pengirim "${jid}" (${currentCount}/${maxRequests})`, {
       jid,
+      category: category ?? 'default',
       currentCount,
       maxRequests,
       resetInSeconds,
@@ -140,10 +182,63 @@ export async function checkRateLimit(
 }
 
 /**
+ * Memeriksa apakah notifikasi peringatan rate limit via DM diizinkan untuk dikirim.
+ * Menggunakan Redis INCR & EXPIRE dengan cooldown TTL agar bot tidak dianggap spammer
+ * oleh WhatsApp ketika pengguna mengirim perintah bertubi-tubi dalam jeda waktu singkat.
+ */
+export async function shouldSendRateLimitWarning(
+  jid: string,
+  category: RateLimitCategory | string = 'info',
+  cooldownSeconds = 5
+): Promise<boolean> {
+  let normalizedJid: string;
+  try {
+    normalizedJid = normalizeToWhatsAppJid(jid);
+  } catch {
+    normalizedJid = jid.trim();
+  }
+  const warnKey = `ratelimit:warn:${category}:${normalizedJid}`;
+  const incrResult = await redisIncr(warnKey);
+  if (!incrResult.success) {
+    return true; // Fail-open: tetap kirim jika Redis bermasalah
+  }
+
+  if (incrResult.data === 1) {
+    await redisExpire(warnKey, Math.max(1, cooldownSeconds));
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Menghapus data rate limit pengguna tertentu (misal untuk testing atau reset admin).
  */
-export async function resetRateLimit(jid: string): Promise<boolean> {
-  const key = getRateLimitKey(jid);
-  const result = await redisDel(key);
-  return result.success && result.data;
+export async function resetRateLimit(
+  jid: string,
+  category?: RateLimitCategory | string
+): Promise<boolean> {
+  if (category) {
+    const key = getRateLimitKey(jid, category);
+    const result = await redisDel(key);
+    return result.success && result.data;
+  }
+  const keys = [
+    getRateLimitKey(jid, 'action'),
+    getRateLimitKey(jid, 'info'),
+    getRateLimitKey(jid, 'user'),
+    getRateLimitKey(jid),
+  ];
+  let normalizedJid: string;
+  try {
+    normalizedJid = normalizeToWhatsAppJid(jid);
+  } catch {
+    normalizedJid = jid.trim();
+  }
+  keys.push(`ratelimit:warn:action:${normalizedJid}`);
+  keys.push(`ratelimit:warn:info:${normalizedJid}`);
+  keys.push(`ratelimit:warn:user:${normalizedJid}`);
+
+  const results = await Promise.all(keys.map((k) => redisDel(k)));
+  return results.some((r) => r.success && r.data);
 }

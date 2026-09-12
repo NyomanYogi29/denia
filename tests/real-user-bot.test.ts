@@ -131,6 +131,11 @@ describe('Real User WhatsApp Bot Test Cases (Admin, Korti & Unregistered)', () =
       windowMs: 30000,
     });
 
+    await resetRateLimit(adminJid);
+    await resetRateLimit(kortiJidA);
+    await resetRateLimit(kortiJidB);
+    await resetRateLimit(strangerJid);
+
     router = createMessageRouter();
     registerDefaultBotCommands(router, { bufferService });
   });

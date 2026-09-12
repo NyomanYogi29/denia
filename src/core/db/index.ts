@@ -9,6 +9,13 @@ const sqlite = new Database(config.db.fileName);
 // Optimasi performa dan konkurensi dengan WAL (Write-Ahead Logging)
 sqlite.exec('PRAGMA journal_mode = WAL;');
 sqlite.exec('PRAGMA foreign_keys = ON;');
+sqlite.exec('PRAGMA synchronous = NORMAL;');
+sqlite.exec('PRAGMA cache_size = -32000;'); // ~32MB RAM page cache
+sqlite.exec('PRAGMA mmap_size = 134217728;'); // 128MB Memory-mapped I/O
+sqlite.exec('PRAGMA temp_store = MEMORY;');
+
+// Pastikan indeks komposit untuk query jadwal aktif pada basis data SQLite
+sqlite.exec('CREATE INDEX IF NOT EXISTS idx_bookings_date_room ON bookings(booking_date, room_code);');
 
 // Inisialisasi instance Drizzle ORM dengan relational query API
 export const db = drizzle({ client: sqlite, relations: schema.relations });

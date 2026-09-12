@@ -7,6 +7,7 @@ import {
 } from '@/bot';
 import { db, bookings, forceEvents, users } from '@/core/db';
 import { createBookingUseCase } from '@/core/features/booking';
+import { resetRateLimit } from '@/core/middleware';
 import { ReactionEmoji } from '@/core/templates';
 
 function createMockMessage(options: {
@@ -67,6 +68,8 @@ describe('WhatsApp Bot Cancel Command Consumer (Fase 5.2 - !batal)', () => {
     await db.delete(forceEvents).where(eq(forceEvents.roomCode, testRoomCode));
     await db.delete(users).where(eq(users.jid, testKortiJid));
     await db.delete(users).where(eq(users.jid, otherKortiJid));
+    await resetRateLimit(testKortiJid);
+    await resetRateLimit(otherKortiJid);
 
     await db.insert(users).values({
       jid: testKortiJid,
@@ -200,5 +203,59 @@ describe('WhatsApp Bot Cancel Command Consumer (Fase 5.2 - !batal)', () => {
     );
     expect(dmMessage).toBeDefined();
     expect(dmMessage?.content.text).toContain('tidak lengkap');
+  });
+
+  it('should handle duplicate cancellation idempotently by reacting ✅ without sending duplicate chat', async () => {
+    const mockSock = createMockSocket();
+    const router = createMessageRouter();
+    registerDefaultBotCommands(router);
+
+    // Buat booking awal
+    await createBookingUseCase({
+      roomCode: testRoomCode,
+      date: tomorrowFormatted,
+      slotCode: 'DEF',
+      userJid: testKortiJid,
+    });
+
+    const msg1 = createMockMessage({
+      text: `!batal RAK_2.1 ${tomorrowFormatted} DEF`,
+      senderJid: testKortiJid,
+      chatJid: testGroupJid,
+      isGroup: true,
+    });
+
+    // Pembatalan 1: Berhasil
+    await router.handleMessage(msg1, mockSock);
+
+    const chatCountAfterFirstCancel = mockSock.sentMessages.filter(
+      (m) => m.jid === testGroupJid && typeof m.content.text === 'string' && m.content.text.includes('Peminjaman Ruangan Berhasil Dibatalkan')
+    ).length;
+    expect(chatCountAfterFirstCancel).toBe(1);
+
+    // Reset rate limit agar request 2 bisa diproses
+    await resetRateLimit(testKortiJid);
+
+    const msg2 = createMockMessage({
+      text: `!batal RAK_2.1 ${tomorrowFormatted} DEF`,
+      senderJid: testKortiJid,
+      chatJid: testGroupJid,
+      isGroup: true,
+    });
+
+    // Pembatalan 2: Idempoten oleh user yang sama
+    await router.handleMessage(msg2, mockSock);
+
+    // Reaksi sukses (✅) pada msg2
+    const successReaction = mockSock.sentMessages.find(
+      (m) => m.content.react?.text === ReactionEmoji.SUCCESS && m.content.react.key.id === msg2.key.id
+    );
+    expect(successReaction).toBeDefined();
+
+    // Jumlah pesan chat pembatalan TIDAK bertambah (tetap 1)
+    const chatCountAfterSecondCancel = mockSock.sentMessages.filter(
+      (m) => m.jid === testGroupJid && typeof m.content.text === 'string' && m.content.text.includes('Peminjaman Ruangan Berhasil Dibatalkan')
+    ).length;
+    expect(chatCountAfterSecondCancel).toBe(1);
   });
 });

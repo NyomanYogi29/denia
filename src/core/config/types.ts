@@ -33,6 +33,11 @@ export interface AppConfig {
   };
   readonly redis: {
     readonly url: string;
+    readonly rateLimitActionMaxRequests: number;
+    readonly rateLimitActionWindowSeconds: number;
+    readonly rateLimitInfoMaxRequests: number;
+    readonly rateLimitInfoWindowSeconds: number;
+    readonly rateLimitBypassAdmin: boolean;
     readonly rateLimitMaxRequests: number;
     readonly rateLimitWindowSeconds: number;
   };

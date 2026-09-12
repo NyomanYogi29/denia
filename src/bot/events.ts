@@ -11,7 +11,12 @@ import {
   normalizeToWhatsAppJid,
   parseCommand,
 } from '@/core/utils';
-import { checkRateLimit } from '@/core/middleware';
+import { config } from '@/core/config';
+import {
+  checkRateLimit,
+  resolveRateLimitCategory,
+  shouldSendRateLimitWarning,
+} from '@/core/middleware';
 import type {
   BotClient,
   CommandHandler,
@@ -209,33 +214,53 @@ export function createMessageRouter(
         await options.onUnauthorizedUser(context, sock);
       }
 
-      // 10. Validasi Batas Laju (Rate Limiting) berbasis Redis (Bypass untuk Admin & Staf)
-      const isStaffOrAdmin = user?.role === 'admin' || user?.role === 'staff';
-      if (!isStaffOrAdmin) {
-        const rateLimit = await checkRateLimit(senderJid);
+      // 10. Validasi Batas Laju (Rate Limiting) berbasis Redis (Bypass untuk Admin jika diaktifkan)
+      const isAdmin = user?.role === 'admin';
+      const shouldBypass = isAdmin && config.redis.rateLimitBypassAdmin;
+      if (!shouldBypass) {
+        const category = resolveRateLimitCategory(parsedCommand.command);
+        const rateLimit = await checkRateLimit(senderJid, { category });
         if (!rateLimit.allowed) {
-          log.warn(`Perintah "!${parsedCommand.command}" ditolak karena melewati batas laju: ${senderJid}`, {
-            senderJid,
-            currentCount: rateLimit.currentCount,
-            limit: rateLimit.limit,
-            resetInSeconds: rateLimit.resetInSeconds,
-          });
+          log.warn(
+            `Perintah "!${parsedCommand.command}" ditolak karena melewati batas laju: ${senderJid} [tier: ${category}]`,
+            {
+              senderJid,
+              command: parsedCommand.command,
+              category,
+              currentCount: rateLimit.currentCount,
+              limit: rateLimit.limit,
+              resetInSeconds: rateLimit.resetInSeconds,
+            }
+          );
 
-          // Tetap pasang reaksi PROCESSING (⏳) pada pesan sumber
+          // Pasang reaksi WARNING (⚠️) pada pesan sumber jika ditolak rate limit
           if (autoReact) {
-            await sendReaction(sock, msg.key, ReactionEmoji.PROCESSING);
+            await sendReaction(sock, msg.key, ReactionEmoji.WARNING);
           }
 
-          // Kirim notifikasi peringatan edukatif via DM / Japri ke pengirim
-          const warningMessage =
-            `⚠️ *Batas Pengiriman Perintah Tercapai*\n\n` +
-            `Anda telah mencapai batas maksimum *${rateLimit.limit} perintah per menit*.\n` +
-            `Silakan tunggu *${rateLimit.resetInSeconds} detik* sebelum mengirim perintah berikutnya.`;
+          // Kirim notifikasi peringatan edukatif via DM / Japri ke pengirim (dengan proteksi anti-spam Redis)
+          const canSendWarningDm = await shouldSendRateLimitWarning(
+            senderJid,
+            category,
+            rateLimit.resetInSeconds
+          );
 
-          try {
-            await sock.sendMessage(senderJid, { text: warningMessage });
-          } catch (dmErr) {
-            log.warn('Gagal mengirim pesan peringatan rate limit via DM', { error: dmErr });
+          if (canSendWarningDm) {
+            const actionDesc =
+              category === 'action'
+                ? `eksekusi pemesanan/pembatalan ruangan (maks. ${rateLimit.limit} perintah per ${rateLimit.resetInSeconds} detik)`
+                : `permintaan informasi ruangan (maks. ${rateLimit.limit} perintah per menit)`;
+
+            const warningMessage =
+              `⚠️ *Batas Pengiriman Perintah Tercapai*\n\n` +
+              `Anda telah mencapai batas maksimum untuk ${actionDesc}.\n` +
+              `Silakan tunggu *${rateLimit.resetInSeconds} detik* sebelum mengirim perintah berikutnya.`;
+
+            try {
+              await sock.sendMessage(senderJid, { text: warningMessage });
+            } catch (dmErr) {
+              log.warn('Gagal mengirim pesan peringatan rate limit via DM', { error: dmErr });
+            }
           }
 
           return ok(context);

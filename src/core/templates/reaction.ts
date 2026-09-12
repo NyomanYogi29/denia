@@ -6,6 +6,7 @@ export const ReactionEmoji = Object.freeze({
   SUCCESS: '✅',
   FAILED: '❌',
   DM_SENT: '📩',
+  WARNING: '⚠️',
 } as const);
 
 export type ReactionEmojiType = (typeof ReactionEmoji)[keyof typeof ReactionEmoji];

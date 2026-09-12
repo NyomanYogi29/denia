@@ -141,6 +141,15 @@ export async function createBookingImmediate(
         .all(roomCode, bookingDate, ...slotCodes) as any[];
 
       if (activeConflicts.length > 0) {
+        // Cek apakah seluruh slot yang diminta (100%) sudah merupakan booking aktif milik pengguna yang sama (idempotent duplicate)
+        const isAllOwnedBySameUser =
+          activeConflicts.length === slotCodes.length &&
+          activeConflicts.every((c) => c.user_jid === userJid);
+
+        if (isAllOwnedBySameUser) {
+          return { isDuplicate: true, bookingIds: activeConflicts.map((c) => c.id) };
+        }
+
         throw new SlotConflictError(
           `Slot ruangan ${roomCode} pada tanggal ${bookingDate} baru saja dipesan oleh kelas lain.`,
           { conflictingSlots: activeConflicts.map((c) => c.slot_code) }
@@ -192,7 +201,24 @@ export async function createBookingImmediate(
       return createdIds;
     });
 
-    const createdIds = transaction.immediate();
+    const result = transaction.immediate();
+
+    if (result && typeof result === 'object' && 'isDuplicate' in result && result.isDuplicate) {
+      const existingRows = await db
+        .select()
+        .from(bookings)
+        .where(inArray(bookings.id, result.bookingIds))
+        .all();
+      log.info(`Pemesanan duplikat idempoten terdeteksi untuk ${userJid}`, {
+        roomCode,
+        bookingDate,
+        slots: slotCodes,
+      });
+      const resArray = Object.assign([...existingRows], { isDuplicate: true });
+      return ok(resArray);
+    }
+
+    const createdIds = result as number[];
 
     // Query data hasil menggunakan Drizzle agar mapping properti camelCase (roomCode, bookingDate, slotCode, dll.) presisi
     const insertedRows = await db
@@ -207,7 +233,8 @@ export async function createBookingImmediate(
       slots: slotCodes,
     });
 
-    return ok(insertedRows);
+    const resArray = Object.assign([...insertedRows], { isDuplicate: false });
+    return ok(resArray);
   } catch (error) {
     if (error instanceof SlotConflictError) {
       log.warn('Pemesanan ruangan ditolak karena konflik slot', error.metadata);
@@ -285,22 +312,49 @@ export async function cancelBookingImmediate(
           status: string;
         }>;
 
-      if (activeBookings.length === 0) {
-        throw new NotFoundError(
-          ErrorCode.BOOKING_NOT_FOUND,
-          `Tidak ditemukan peminjaman aktif untuk ruangan ${roomCode} pada tanggal ${bookingDate} (slot ${normalizedSlots.join('')}).`,
-          { roomCode, bookingDate, slotCodes: normalizedSlots }
-        );
-      }
+      if (activeBookings.length === 0 || activeBookings.length < normalizedSlots.length) {
+        // Periksa apakah slot yang bersangkutan sudah pernah dibatalkan sebelumnya oleh peminjam (idempotent duplicate cancel)
+        const cancelledBookings = sqlite
+          .query(
+            `SELECT id, room_code, booking_date, slot_code, user_jid, status 
+             FROM bookings 
+             WHERE room_code = ? AND booking_date = ? AND status IN ('cancelled', 'force_cancelled') 
+             AND slot_code IN (${placeholders})`
+          )
+          .all(roomCode, bookingDate, ...normalizedSlots) as Array<{
+            id: number;
+            room_code: string;
+            booking_date: string;
+            slot_code: string;
+            user_jid: string;
+            status: string;
+          }>;
 
-      const foundSlotCodes = activeBookings.map((b) => b.slot_code.toUpperCase());
-      const missingSlots = normalizedSlots.filter((s) => !foundSlotCodes.includes(s));
-      if (missingSlots.length > 0) {
-        throw new NotFoundError(
-          ErrorCode.BOOKING_NOT_FOUND,
-          `Peminjaman aktif untuk slot ${missingSlots.join('')} pada ruangan ${roomCode} (${bookingDate}) tidak ditemukan atau sudah dibatalkan sebelumnya.`,
-          { missingSlots, foundSlots: foundSlotCodes }
-        );
+        const isAllAlreadyCancelledBySelf =
+          cancelledBookings.length >= normalizedSlots.length &&
+          cancelledBookings.every((b) => isStaffOrAdmin || b.user_jid === userJid);
+
+        if (isAllAlreadyCancelledBySelf && activeBookings.length === 0) {
+          return { isDuplicate: true, bookingIds: cancelledBookings.map((b) => b.id) };
+        }
+
+        if (activeBookings.length === 0) {
+          throw new NotFoundError(
+            ErrorCode.BOOKING_NOT_FOUND,
+            `Tidak ditemukan peminjaman aktif untuk ruangan ${roomCode} pada tanggal ${bookingDate} (slot ${normalizedSlots.join('')}).`,
+            { roomCode, bookingDate, slotCodes: normalizedSlots }
+          );
+        }
+
+        const foundSlotCodes = activeBookings.map((b) => b.slot_code.toUpperCase());
+        const missingSlots = normalizedSlots.filter((s) => !foundSlotCodes.includes(s));
+        if (missingSlots.length > 0) {
+          throw new NotFoundError(
+            ErrorCode.BOOKING_NOT_FOUND,
+            `Peminjaman aktif untuk slot ${missingSlots.join('')} pada ruangan ${roomCode} (${bookingDate}) tidak ditemukan atau sudah dibatalkan sebelumnya.`,
+            { missingSlots, foundSlots: foundSlotCodes }
+          );
+        }
       }
 
       // 2. Validasi kepemilikan: pengguna biasa hanya boleh membatalkan booking miliknya sendiri
@@ -328,7 +382,24 @@ export async function cancelBookingImmediate(
       return bookingIds;
     });
 
-    const cancelledIds = transaction.immediate();
+    const result = transaction.immediate();
+
+    if (result && typeof result === 'object' && 'isDuplicate' in result && result.isDuplicate) {
+      const existingCancelledRows = await db
+        .select()
+        .from(bookings)
+        .where(inArray(bookings.id, result.bookingIds))
+        .all();
+      log.info(`Pembatalan duplikat idempoten terdeteksi untuk ${userJid}`, {
+        roomCode,
+        bookingDate,
+        slots: normalizedSlots,
+      });
+      const resArray = Object.assign([...existingCancelledRows], { isDuplicate: true });
+      return ok(resArray);
+    }
+
+    const cancelledIds = result as number[];
 
     // Query hasil pembaruan via Drizzle
     const cancelledRows = await db
@@ -345,7 +416,8 @@ export async function cancelBookingImmediate(
       isStaffOrAdmin,
     });
 
-    return ok(cancelledRows);
+    const resArray = Object.assign([...cancelledRows], { isDuplicate: false });
+    return ok(resArray);
   } catch (error) {
     if (
       error instanceof NotFoundError ||

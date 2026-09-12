@@ -178,6 +178,69 @@ export async function redisDel(
 }
 
 /**
+ * Mengambil nilai string suatu key dari basis data Redis (GET).
+ * Mengembalikan null jika key tidak ditemukan.
+ */
+export async function redisGet(
+  key: string,
+  timeoutMs = DEFAULT_REDIS_TIMEOUT_MS
+): Promise<Result<string | null, AppError>> {
+  try {
+    const val = await withTimeout(redis.get(key), timeoutMs);
+    return ok(val !== null ? String(val) : null);
+  } catch (error) {
+    log.debug(`Redis GET gagal pada key "${key}" (fail-open)`, { error: String(error) });
+    return err(
+      new DatabaseError(`Gagal membaca key Redis: ${error instanceof Error ? error.message : String(error)}`, {
+        key,
+      })
+    );
+  }
+}
+
+/**
+ * Menyimpan nilai string pada Redis dengan opsi masa berlaku (TTL) dalam detik (SET ... EX seconds).
+ */
+export async function redisSet(
+  key: string,
+  value: string,
+  expireSeconds?: number,
+  timeoutMs = DEFAULT_REDIS_TIMEOUT_MS
+): Promise<Result<boolean, AppError>> {
+  try {
+    if (typeof expireSeconds === 'number' && expireSeconds > 0) {
+      await withTimeout(redis.set(key, value, 'EX', expireSeconds), timeoutMs);
+    } else {
+      await withTimeout(redis.set(key, value), timeoutMs);
+    }
+    return ok(true);
+  } catch (error) {
+    log.debug(`Redis SET gagal pada key "${key}" (fail-open)`, { error: String(error) });
+    return err(
+      new DatabaseError(`Gagal menyimpan key Redis: ${error instanceof Error ? error.message : String(error)}`, {
+        key,
+      })
+    );
+  }
+}
+
+/**
+ * Melakukan invalidasi seketika pada cache jadwal info (room:schedule:<date> dan room:schedule:<date>:<roomCode>)
+ * saat terjadi transaksi peminjaman (!pinjam) atau pembatalan (!batal) sukses.
+ */
+export async function invalidateScheduleCache(
+  bookingDate: string,
+  roomCode?: string
+): Promise<void> {
+  const keys = [`room:schedule:${bookingDate}`];
+  if (roomCode) {
+    keys.push(`room:schedule:${bookingDate}:${roomCode}`);
+  }
+  await Promise.all(keys.map((k) => redisDel(k)));
+  log.debug(`Cache jadwal di-invalidate untuk tanggal ${bookingDate}`, { keys });
+}
+
+/**
  * Menutup koneksi Redis client secara aman.
  */
 export async function redisClose(): Promise<void> {

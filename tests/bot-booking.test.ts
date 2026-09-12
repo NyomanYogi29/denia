@@ -9,6 +9,7 @@ import {
 } from '@/bot';
 import { db, bookings, forceEvents, users } from '@/core/db';
 import { createBufferService } from '@/core/services/buffer.service.ts';
+import { resetRateLimit } from '@/core/middleware';
 import { ReactionEmoji } from '@/core/templates';
 
 function createMockMessage(options: {
@@ -72,6 +73,7 @@ describe('WhatsApp Bot Booking Command Consumer (Fase 5.1 - !pinjam)', () => {
     await db.delete(bookings).where(eq(bookings.roomCode, testRoomCode));
     await db.delete(forceEvents).where(eq(forceEvents.roomCode, testRoomCode));
     await db.delete(users).where(eq(users.jid, testKortiJid));
+    await resetRateLimit(testKortiJid);
 
     await db.insert(users).values({
       jid: testKortiJid,
@@ -156,6 +158,7 @@ describe('WhatsApp Bot Booking Command Consumer (Fase 5.1 - !pinjam)', () => {
 
   it('should reject unregistered user, react with FAILED (❌), and dispatch Japri DM', async () => {
     const unregisteredJid = '628999777888@s.whatsapp.net';
+    await resetRateLimit(unregisteredJid);
     const mockSock = createMockSocket();
     const router = createMessageRouter();
     registerDefaultBotCommands(router);
@@ -207,5 +210,57 @@ describe('WhatsApp Bot Booking Command Consumer (Fase 5.1 - !pinjam)', () => {
     );
     expect(dmMessage).toBeDefined();
     expect(dmMessage?.content.text).toContain('minimal H-1');
+  });
+
+  it('should handle duplicate booking idempotently by reacting ✅ without pushing to buffer or sending chat', async () => {
+    const mockSock = createMockSocket();
+    const bufferService = createBufferService({
+      getSocket: () => mockSock,
+      windowMs: 30000,
+    });
+
+    const router = createMessageRouter();
+    registerDefaultBotCommands(router, { bufferService });
+
+    const msg1 = createMockMessage({
+      text: `!pinjam RAK_2.1 ${tomorrowFormatted} DEF`,
+      senderJid: testKortiJid,
+      chatJid: testGroupJid,
+      isGroup: true,
+    });
+
+    // Request 1: Sukses normal
+    await router.handleMessage(msg1, mockSock);
+    expect(bufferService.getPendingCount(testGroupJid)).toBe(1);
+
+    // Reset rate limit agar request 2 bisa diproses untuk validasi idempoten
+    await resetRateLimit(testKortiJid);
+
+    const msg2 = createMockMessage({
+      text: `!pinjam RAK_2.1 ${tomorrowFormatted} DEF`,
+      senderJid: testKortiJid,
+      chatJid: testGroupJid,
+      isGroup: true,
+    });
+
+    // Request 2: Duplikat oleh pengguna yang sama untuk slot yang sama persis
+    await router.handleMessage(msg2, mockSock);
+
+    // Buffer count TIDAK bertambah (tetap 1)
+    expect(bufferService.getPendingCount(testGroupJid)).toBe(1);
+
+    // Reaksi sukses (✅) terpasang pada msg2
+    const successReaction = mockSock.sentMessages.find(
+      (m) => m.content.react?.text === ReactionEmoji.SUCCESS && m.content.react.key.id === msg2.key.id
+    );
+    expect(successReaction).toBeDefined();
+
+    // Tidak ada pesan error atau DM penolakan dikirim ke pengguna
+    const dmFailMessage = mockSock.sentMessages.find(
+      (m) => m.jid === testKortiJid && typeof m.content.text === 'string' && m.content.text.includes('baru saja dipesan')
+    );
+    expect(dmFailMessage).toBeUndefined();
+
+    await bufferService.destroy();
   });
 });

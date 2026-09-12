@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach, spyOn } from 'bun:test';
 import type { WAMessage, WASocket } from '@whiskeysockets/baileys';
 import { createMessageRouter, registerDefaultBotCommands } from '@/bot';
+import { config } from '@/core/config';
 import { ReactionEmoji } from '@/core/templates';
 import * as rateLimiterModule from '@/core/middleware/rate-limiter.middleware.ts';
 
@@ -57,23 +58,23 @@ describe('WhatsApp Bot Rate Limiting Guard (Topik E.2)', () => {
     }
   });
 
-  it('should allow up to 7 commands, then throttle on 8th command with DM warning', async () => {
+  it('should throttle commands exceeding limit with WARNING reaction and DM warning', async () => {
     let callCount = 0;
     checkRateLimitSpy = spyOn(rateLimiterModule, 'checkRateLimit').mockImplementation(async () => {
       callCount++;
-      if (callCount <= 7) {
+      if (callCount <= 10) {
         return {
           allowed: true,
           currentCount: callCount,
-          limit: 7,
-          remaining: 7 - callCount,
+          limit: 10,
+          remaining: 10 - callCount,
           resetInSeconds: 0,
         };
       }
       return {
         allowed: false,
         currentCount: callCount,
-        limit: 7,
+        limit: 10,
         remaining: 0,
         resetInSeconds: 45,
       };
@@ -81,16 +82,16 @@ describe('WhatsApp Bot Rate Limiting Guard (Topik E.2)', () => {
 
     const router = createMessageRouter();
     let handlerExecutedCount = 0;
-    router.register('test', async () => {
+    router.register('info', async () => {
       handlerExecutedCount++;
     });
 
     const mockSock = createMockSocket();
 
-    // Kirim 7 perintah berturut-turut
-    for (let i = 1; i <= 7; i++) {
+    // Kirim 10 perintah berturut-turut
+    for (let i = 1; i <= 10; i++) {
       const msg = createMockMessage({
-        text: '!test',
+        text: '!info',
         senderJid: kortiJid,
         chatJid: groupJid,
         isGroup: true,
@@ -98,30 +99,102 @@ describe('WhatsApp Bot Rate Limiting Guard (Topik E.2)', () => {
       await router.handleMessage(msg, mockSock);
     }
 
-    expect(handlerExecutedCount).toBe(7);
+    expect(handlerExecutedCount).toBe(10);
 
-    // Kirim perintah ke-8 (melebihi batas)
-    const msg8 = createMockMessage({
-      text: '!test',
+    // Kirim perintah ke-11 (melebihi batas)
+    const msg11 = createMockMessage({
+      text: '!info',
       senderJid: kortiJid,
       chatJid: groupJid,
       isGroup: true,
     });
-    await router.handleMessage(msg8, mockSock);
+    await router.handleMessage(msg11, mockSock);
 
-    // Handler ke-8 tidak boleh dieksekusi
-    expect(handlerExecutedCount).toBe(7);
+    // Handler ke-11 tidak boleh dieksekusi
+    expect(handlerExecutedCount).toBe(10);
+
+    // Reaksi WARNING (⚠️) dikirimkan pada pesan sumber
+    const warningReaction = mockSock.sentMessages.find(
+      (m) => m.content.react?.text === ReactionEmoji.WARNING
+    );
+    expect(warningReaction).toBeDefined();
 
     // Peringatan DM dikirimkan ke pengirim
     const dmMessages = mockSock.sentMessages.filter(
       (m) => m.jid === kortiJid && typeof m.content.text === 'string' && m.content.text.includes('Batas Pengiriman Perintah')
     );
     expect(dmMessages.length).toBe(1);
-    expect(dmMessages[0]!.content.text).toContain('7 perintah per menit');
+    expect(dmMessages[0]!.content.text).toContain('10 perintah per menit');
     expect(dmMessages[0]!.content.text).toContain('45 detik');
+
+    // Kirim perintah ke-12 (masih terblokir), DM peringatan TIDAK boleh dikirim ulang (anti-spam throttled)
+    const msg12 = createMockMessage({
+      text: '!info',
+      senderJid: kortiJid,
+      chatJid: groupJid,
+      isGroup: true,
+    });
+    await router.handleMessage(msg12, mockSock);
+
+    const dmMessagesAfterSecondRejection = mockSock.sentMessages.filter(
+      (m) => m.jid === kortiJid && typeof m.content.text === 'string' && m.content.text.includes('Batas Pengiriman Perintah')
+    );
+    expect(dmMessagesAfterSecondRejection.length).toBe(1);
   });
 
-  it('should bypass rate limit check for staff and admin roles', async () => {
+  it('should enforce action category rate limit (1 req / 5s) for booking commands', async () => {
+    let callCount = 0;
+    checkRateLimitSpy = spyOn(rateLimiterModule, 'checkRateLimit').mockImplementation(async (_jid, options) => {
+      expect(options?.category).toBe('action');
+      callCount++;
+      if (callCount === 1) {
+        return {
+          allowed: true,
+          currentCount: 1,
+          limit: 1,
+          remaining: 0,
+          resetInSeconds: 0,
+        };
+      }
+      return {
+        allowed: false,
+        currentCount: callCount,
+        limit: 1,
+        remaining: 0,
+        resetInSeconds: 5,
+      };
+    });
+
+    const router = createMessageRouter();
+    let handlerExecutedCount = 0;
+    router.register('pinjam', async () => {
+      handlerExecutedCount++;
+    });
+
+    const mockSock = createMockSocket();
+
+    // Perintah 1 lolos
+    const msg1 = createMockMessage({
+      text: '!pinjam RAK_2.1 14/09/2026 DEF',
+      senderJid: kortiJid,
+      chatJid: groupJid,
+      isGroup: true,
+    });
+    await router.handleMessage(msg1, mockSock);
+    expect(handlerExecutedCount).toBe(1);
+
+    // Perintah 2 dalam 5 detik ditolak
+    const msg2 = createMockMessage({
+      text: '!pinjam RAK_2.1 14/09/2026 DEF',
+      senderJid: kortiJid,
+      chatJid: groupJid,
+      isGroup: true,
+    });
+    await router.handleMessage(msg2, mockSock);
+    expect(handlerExecutedCount).toBe(1);
+  });
+
+  it('should respect RATE_LIMIT_BYPASS_ADMIN setting for admin role', async () => {
     checkRateLimitSpy = spyOn(rateLimiterModule, 'checkRateLimit');
 
     const router = createMessageRouter();
@@ -133,8 +206,6 @@ describe('WhatsApp Bot Rate Limiting Guard (Topik E.2)', () => {
     const mockSock = createMockSocket();
 
     // Kirim pesan dari context yang memiliki user admin
-    // Note: MessageRouter akan mencari user di database via JID
-    // Kita mock checkRateLimit agar jika dipanggil akan terdeteksi
     const msg = createMockMessage({
       text: '!admincmd',
       senderJid: '6285157580906@s.whatsapp.net', // admin JID
@@ -144,5 +215,11 @@ describe('WhatsApp Bot Rate Limiting Guard (Topik E.2)', () => {
 
     await router.handleMessage(msg, mockSock);
     expect(handlerCount).toBe(1);
+
+    if (config.redis.rateLimitBypassAdmin) {
+      expect(checkRateLimitSpy).not.toHaveBeenCalled();
+    } else {
+      expect(checkRateLimitSpy).toHaveBeenCalled();
+    }
   });
 });

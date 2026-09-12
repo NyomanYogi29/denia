@@ -79,7 +79,16 @@ export function createPinjamCommandHandler(
     // 3. Perbarui reaksi emoji sumber menjadi sukses (✅)
     await dispatchSuccess(sock, ctx.messageKey);
 
-    // 4. Masukkan ke micro-batch buffer service (30 detik tumbling window)
+    // 4. Jika pemesanan ini adalah duplikat idempoten milik pengguna sendiri:
+    // Cukup perbarui reaksi menjadi ✅ tanpa mengirim pesan baru dan tanpa memasukkan ulang ke buffer grup
+    if (booked.isDuplicate) {
+      log.info(
+        `Pemesanan duplikat idempoten terdeteksi untuk ${ctx.senderJid} pada ruangan ${booked.room.code} (${booked.slot.raw}); hanya merespons reaksi ✅ tanpa pesan baru.`
+      );
+      return;
+    }
+
+    // 5. Masukkan ke micro-batch buffer service (30 detik tumbling window)
     if (bufferService) {
       bufferService.push({
         groupJid: ctx.chatJid,

@@ -4,6 +4,8 @@ import {
   checkRateLimit,
   getRateLimitKey,
   resetRateLimit,
+  resolveRateLimitCategory,
+  shouldSendRateLimitWarning,
 } from '@/core/middleware/rate-limiter.middleware.ts';
 import { ok, err } from '@/core/types';
 import { DatabaseError } from '@/core/errors';
@@ -12,8 +14,24 @@ describe('Rate Limiter Middleware (src/core/middleware/rate-limiter.middleware.t
   const testJid = '628123456789@s.whatsapp.net';
 
   it('should format rate limit redis key consistently', () => {
-    const key = getRateLimitKey('08123456789');
-    expect(key).toBe('ratelimit:user:628123456789@s.whatsapp.net');
+    const defaultKey = getRateLimitKey('08123456789');
+    expect(defaultKey).toBe('ratelimit:user:628123456789@s.whatsapp.net');
+
+    const actionKey = getRateLimitKey('08123456789', 'action');
+    expect(actionKey).toBe('ratelimit:action:628123456789@s.whatsapp.net');
+
+    const infoKey = getRateLimitKey('08123456789', 'info');
+    expect(infoKey).toBe('ratelimit:info:628123456789@s.whatsapp.net');
+  });
+
+  it('should resolve rate limit categories correctly', () => {
+    expect(resolveRateLimitCategory('pinjam')).toBe('action');
+    expect(resolveRateLimitCategory('book')).toBe('action');
+    expect(resolveRateLimitCategory('batal')).toBe('action');
+    expect(resolveRateLimitCategory('cancel')).toBe('action');
+    expect(resolveRateLimitCategory('info')).toBe('info');
+    expect(resolveRateLimitCategory('jadwal')).toBe('info');
+    expect(resolveRateLimitCategory('unknown')).toBe('info');
   });
 
   describe('Fixed Window Counter logic with Mocked Redis', () => {
@@ -84,16 +102,43 @@ describe('Rate Limiter Middleware (src/core/middleware/rate-limiter.middleware.t
       expect(res8.resetInSeconds).toBe(60);
     });
 
-    it('should reset count after resetRateLimit is called', async () => {
-      await checkRateLimit(testJid, { maxRequests: 7, windowSeconds: 60 });
-      await checkRateLimit(testJid, { maxRequests: 7, windowSeconds: 60 });
+    it('should enforce action rate limit (1 request per 5 seconds)', async () => {
+      // 1st request should be allowed
+      const res1 = await checkRateLimit(testJid, { category: 'action', windowSeconds: 5 });
+      expect(res1.allowed).toBe(true);
+      expect(res1.limit).toBe(1);
+      expect(res1.remaining).toBe(0);
 
-      const resetOk = await resetRateLimit(testJid);
-      expect(resetOk).toBe(true);
+      // 2nd request within 5s should be rejected
+      const res2 = await checkRateLimit(testJid, { category: 'action', windowSeconds: 5 });
+      expect(res2.allowed).toBe(false);
+      expect(res2.currentCount).toBe(2);
+      expect(res2.resetInSeconds).toBe(5);
+    });
 
-      const nextRes = await checkRateLimit(testJid, { maxRequests: 7, windowSeconds: 60 });
-      expect(nextRes.allowed).toBe(true);
-      expect(nextRes.currentCount).toBe(1);
+    it('should enforce info rate limit (10 requests per 60 seconds)', async () => {
+      // 10 requests allowed
+      for (let i = 1; i <= 10; i++) {
+        const res = await checkRateLimit(testJid, { category: 'info' });
+        expect(res.allowed).toBe(true);
+        expect(res.limit).toBe(10);
+      }
+
+      // 11th request rejected
+      const res11 = await checkRateLimit(testJid, { category: 'info' });
+      expect(res11.allowed).toBe(false);
+      expect(res11.currentCount).toBe(11);
+      expect(res11.resetInSeconds).toBe(60);
+    });
+
+    it('should throttle warning messages using shouldSendRateLimitWarning', async () => {
+      // 1st call should return true
+      const canSend1 = await shouldSendRateLimitWarning(testJid, 'action', 5);
+      expect(canSend1).toBe(true);
+
+      // 2nd call within same window should return false
+      const canSend2 = await shouldSendRateLimitWarning(testJid, 'action', 5);
+      expect(canSend2).toBe(false);
     });
   });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach } from 'bun:test';
 import { eq } from 'drizzle-orm';
-import { db, bookings, forceEvents, users } from '@/core/db';
+import { db, bookings, forceEvents, users, invalidateScheduleCache } from '@/core/db';
 import { getRoomAvailabilityUseCase } from '@/core/features/info';
 import { ErrorCode } from '@/core/errors';
 
@@ -11,10 +11,11 @@ describe('Get Room Availability Use Case (src/core/features/info/get-room-availa
   const testBookingDateFormatted = '20/10/2026';
 
   beforeEach(async () => {
-    // Bersihkan data tes
+    // Bersihkan data tes & cache Redis
     await db.delete(bookings).where(eq(bookings.roomCode, testRoomCode));
     await db.delete(forceEvents).where(eq(forceEvents.roomCode, testRoomCode));
     await db.delete(users).where(eq(users.jid, testJid));
+    await invalidateScheduleCache(testBookingDate, testRoomCode);
 
     // Siapkan user test
     await db.insert(users).values({
@@ -33,6 +34,7 @@ describe('Get Room Availability Use Case (src/core/features/info/get-room-availa
     await db.delete(bookings).where(eq(bookings.roomCode, testRoomCode));
     await db.delete(forceEvents).where(eq(forceEvents.roomCode, testRoomCode));
     await db.delete(users).where(eq(users.jid, testJid));
+    await invalidateScheduleCache(testBookingDate, testRoomCode);
   });
 
   it('should successfully get availability for today when no date is provided', async () => {
@@ -183,4 +185,45 @@ describe('Get Room Availability Use Case (src/core/features/info/get-room-availa
     // Jam 22:30 (malam), seluruh slot A-O sudah terlewat
     expect(getPassedSlots('22:30').length).toBe(15);
   });
+
+  it('should cache room availability in Redis and invalidate upon booking creation', async () => {
+    const { redisGet } = await import('@/core/db');
+    const { createBookingUseCase } = await import('@/core/features/booking');
+
+    const cacheKey = `room:schedule:${testBookingDate}:${testRoomCode}`;
+
+    // 1. Initial state: cache is empty
+    const initGet = await redisGet(cacheKey);
+    expect(initGet.success).toBe(true);
+    expect(initGet.data).toBeNull();
+
+    // 2. Query availability -> populates cache
+    const queryResult = await getRoomAvailabilityUseCase({
+      date: testBookingDateFormatted,
+      roomCode: testRoomCode,
+    });
+    expect(queryResult.success).toBe(true);
+
+    const cachedGet = await redisGet(cacheKey);
+    expect(cachedGet.success).toBe(true);
+    expect(cachedGet.data).not.toBeNull();
+    const parsedCache = JSON.parse(cachedGet.data!);
+    expect(parsedCache.formattedMessage).toBeDefined();
+
+    // 3. Create booking -> must invalidate cache
+    const bookingResult = await createBookingUseCase({
+      userJid: testJid,
+      roomCode: testRoomCode,
+      date: testBookingDateFormatted,
+      slotCode: 'A',
+      notes: 'Kuliah Pemrograman',
+    });
+    expect(bookingResult.success).toBe(true);
+
+    // Cache should be evicted now
+    const afterBookingGet = await redisGet(cacheKey);
+    expect(afterBookingGet.success).toBe(true);
+    expect(afterBookingGet.data).toBeNull();
+  });
 });
+

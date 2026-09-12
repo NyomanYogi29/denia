@@ -2,6 +2,7 @@ import {
   createBookingImmediate,
   findUserByJid,
 } from '@/core/db/repositories/index.ts';
+import { invalidateScheduleCache } from '@/core/db/redis.ts';
 import {
   ErrorCode,
   UnauthorizedError,
@@ -132,17 +133,30 @@ export async function createBookingUseCase(
     return dbBookingResult;
   }
 
+  const isDuplicate = Boolean((dbBookingResult.data as any).isDuplicate);
+
   const bookedDetails: BookedRoomDetails = Object.freeze({
     room,
     date,
     slot,
     user,
     bookings: Object.freeze(dbBookingResult.data),
+    isDuplicate,
   });
 
   log.info(
     `Berhasil mencatat peminjaman ruangan ${room.code} untuk tanggal ${date.raw} (${slot.raw}) oleh ${user.nama} (${user.kelas})`
   );
+
+  if (!isDuplicate) {
+    try {
+      await invalidateScheduleCache(date.iso, room.code);
+    } catch (cacheErr) {
+      log.debug('Gagal melakukan invalidasi cache jadwal (non-fatal)', {
+        error: String(cacheErr),
+      });
+    }
+  }
 
   return ok(bookedDetails);
 }

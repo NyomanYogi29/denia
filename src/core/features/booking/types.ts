@@ -16,6 +16,7 @@ export interface BookedRoomDetails {
   readonly slot: ParsedSlot;
   readonly user: User;
   readonly bookings: readonly Booking[];
+  readonly isDuplicate?: boolean;
 }
 
 export type CreateBookingUseCaseResult = BookedRoomDetails;
@@ -29,6 +30,7 @@ export interface CancelledBookingDetails {
   readonly user: User;
   readonly cancelledBookings: readonly Booking[];
   readonly isStaffOrAdmin: boolean;
+  readonly isDuplicate?: boolean;
 }
 
 export type CancelBookingUseCaseResult = CancelledBookingDetails;

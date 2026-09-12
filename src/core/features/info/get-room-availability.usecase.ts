@@ -1,5 +1,6 @@
 import { SLOT_CODES, type RoomInfo } from '@/core/constants';
 import { getRoomAvailabilityRawData } from '@/core/db/repositories';
+import { redisGet, redisSet } from '@/core/db/redis.ts';
 import { ErrorCode, ValidationError, type AppError } from '@/core/errors';
 import { logger } from '@/core/logger';
 import {
@@ -113,7 +114,23 @@ export async function getRoomAvailabilityUseCase(
     filterRoomCode = roomResult.data.room.code;
   }
 
-  // 4. Query data mentah dari basis data
+  // 4. Periksa cache Redis lokal dengan TTL singkat (3 detik)
+  const cacheKey = filterRoomCode
+    ? `room:schedule:${date.iso}:${filterRoomCode}`
+    : `room:schedule:${date.iso}`;
+
+  const cached = await redisGet(cacheKey);
+  if (cached.success && cached.data) {
+    try {
+      const parsedCachedResult = JSON.parse(cached.data) as GetRoomAvailabilityResult;
+      log.debug(`Menyajikan matriks ketersediaan ruangan dari cache Redis (${cacheKey})`);
+      return ok(parsedCachedResult);
+    } catch {
+      // Fallback ke fresh database query jika JSON parsing gagal
+    }
+  }
+
+  // 5. Query data mentah dari basis data SQLite
   const rawDataResult = await getRoomAvailabilityRawData({
     bookingDate: date.iso,
     roomCode: filterRoomCode,
@@ -247,10 +264,19 @@ export async function getRoomAvailabilityUseCase(
     partiallyBookedRooms,
   });
 
-  return ok(
-    Object.freeze({
-      matrixData,
-      formattedMessage,
-    })
-  );
+  const result: GetRoomAvailabilityResult = Object.freeze({
+    matrixData,
+    formattedMessage,
+  });
+
+  // Simpan ke Redis cache lokal dengan TTL 3 detik (EX 3)
+  try {
+    await redisSet(cacheKey, JSON.stringify(result), 3);
+  } catch (cacheErr) {
+    log.debug('Gagal menyimpan cache Redis untuk info jadwal (non-fatal)', {
+      error: String(cacheErr),
+    });
+  }
+
+  return ok(result);
 }
