@@ -111,6 +111,21 @@
 - [x] **5.3 `!info [DD/MM/YYYY]` atau `!info`**
   - Tampilkan matriks ketersediaan seluruh ruangan per slot SKS pada tanggal yang diminta.
 
+#### 🔸 Evaluasi Hasil Testing Sementara Bot (Pra-Fase 5.4):
+- [ ] **E.1 Persistensi Data & Manajemen Sesi Autentikasi Bot**
+  - Masalah: Informasi booking ruangan dan korti yang terdaftar menghilang saat sesi autentikasi bot terputus/hilang, dan ketika relog via QR code data lama hilang.
+  - Evaluasi: Investigasi persistensi SQLite vs folder auth Baileys, pastikan database tidak ter-reset/ter-flush saat sesi login ulang, dan kaji mekanisme rotasi sesi agar bot memiliki uptime tinggi.
+- [ ] **E.2 Rate Limiting Perintah Pengguna (Per-User Rate Limit)**
+  - Kebutuhan: Terapkan batas laju (rate limit) 7 perintah per menit per user untuk mencegah spamming dan overload perintah di WhatsApp bot.
+- [ ] **E.3 Sinkronisasi Status Booking pada Tampilan Matriks `!info`**
+  - Masalah: Ruangan berhasil dipinjam via `!pinjam`, namun saat `!info` dijalankan semua status ruangan masih tampil hijau (seolah belum ada yang dibooking).
+  - Evaluasi: Investigasi mapping slot/tanggal antara tabel `bookings` dan query ketersediaan di `availability.repository.ts`.
+- [ ] **E.4 Routing Output Matriks `!info` ke Jalur Pribadi (DM)**
+  - Masalah/Kebutuhan: Output matriks `!info` saat ini memenuhi chat grup; ubah pengiriman hasil matriks `!info` agar dikirim ke DM pribadi korti/pemohon (grup hanya menerima respons ringkas bila dipanggil di grup).
+- [x] **E.5 Proteksi Otorisasi Pembatalan (`!batal` / `!cancel`) Antar-Korti**
+  - Status: *Sudah terimplementasi & terverifikasi (Verified)*.
+  - Guard kepemilikan sudah aktif di `cancelBookingImmediate` (`user_jid` check) dan `cancelBookingUseCase` (hanya pemilik asli atau admin/staf yang berhak membatalkan). Upaya pembatalan oleh pengguna lain otomatis ditolak dengan reaksi emoji ❌ di grup dan notifikasi edukatif dikirim via DM/Japri.
+
 #### 🔸 Role Staf / Admin:
 - [ ] **5.4 `!force [kode_ruangan] [DD/MM/YYYY] [kode_slot] [alasan]`**
   - Pengambilalihan paksa slot ruangan untuk agenda institusi/dosen pengampu mendadak.
