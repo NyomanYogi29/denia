@@ -140,6 +140,7 @@ export function createForceCommandHandler(): CommandHandler {
       reason: forced.reason,
       staffName: forced.user.nama,
       displacedCount: forced.displacedBookings.length,
+      bookingIds: forced.bookings.map((b) => b.id),
     });
 
     await sock.sendMessage(ctx.chatJid, { text: announcementText });

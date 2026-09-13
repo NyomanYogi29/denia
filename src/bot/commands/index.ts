@@ -8,6 +8,7 @@ import { createBatalCommandHandler } from './batal.ts';
 import { createInfoCommandHandler } from './info.ts';
 import { createForceCommandHandler } from './force.ts';
 import { createForceEventCommandHandler } from './force-event.ts';
+import { createAbortCommandHandler } from './abort.ts';
 
 export {
   createPinjamCommandHandler,
@@ -15,6 +16,7 @@ export {
   createInfoCommandHandler,
   createForceCommandHandler,
   createForceEventCommandHandler,
+  createAbortCommandHandler,
 };
 export type { PinjamCommandOptions };
 
@@ -36,6 +38,7 @@ export function registerDefaultBotCommands(
   const infoHandler = createInfoCommandHandler();
   const forceHandler = createForceCommandHandler();
   const forceEventHandler = createForceEventCommandHandler();
+  const abortHandler = createAbortCommandHandler();
 
   router.register('pinjam', pinjamHandler);
   router.register('book', pinjamHandler);
@@ -49,6 +52,9 @@ export function registerDefaultBotCommands(
   router.register('forceevent', forceEventHandler);
   router.register('event', forceEventHandler);
   router.register('blokir', forceEventHandler);
+  router.register('abort', abortHandler);
+  router.register('batalforce', abortHandler);
 
   return router;
 }
+

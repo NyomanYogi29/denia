@@ -140,8 +140,13 @@
   - Menimpa booking yang ada secara atomik via SQLite `BEGIN IMMEDIATE` (ubah status booking korti lama menjadi `force_cancelled`).
   - Kirim notifikasi peringatan otomatis via DM ke masing-masing korti terdampak dengan slot terkompresi.
   - Pengumuman resmi di grup/chat dan dukungan perintah CLI `denia forceevent`.
-- [ ] **5.6 `!abort force [id_booking]`**
-  - Membatalkan status pemblokiran/force ruangan oleh admin.
+- [x] **5.6 `!abort force [id_booking]`**
+  - Membatalkan status pemblokiran/force ruangan oleh admin atau staf.
+  - Auto-detection seluruh rangkaian slot dari sesi force terkait secara atomik via SQLite `BEGIN IMMEDIATE`.
+  - Notifikasi otomatis Japri (DM) ke Korti yang sebelumnya tergeser bahwa ruangan telah tersedia kembali untuk dipesan.
+  - Pengumuman resmi pembatalan pengambilalihan di grup WhatsApp dan pembaruan reaksi emoji `✅`.
+  - Sekaligus mendukung `!abort forceevent [id_event]` / `!abort event [id_event]` untuk pembatalan agenda blokir kampus.
+  - Antarmuka CLI lengkap: `denia abort force [id]` dan `denia abort event [id]`.
 
 
 ---

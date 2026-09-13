@@ -14,6 +14,7 @@ import {
   executeInfo,
   executeForce,
   executeForceEvent,
+  executeAbort,
   FLUSHDB_OPTIONS,
   SEED_KORTI_OPTIONS,
   USER_ADD_OPTIONS,
@@ -22,7 +23,9 @@ import {
   INFO_OPTIONS,
   FORCE_OPTIONS,
   FORCE_EVENT_OPTIONS,
+  ABORT_OPTIONS,
 } from '@/cli/commands/index.ts';
+
 import {
   CliCommandNotFoundError,
   handleCliError,
@@ -43,6 +46,7 @@ function printHelp(): void {
   console.log('  info, jadwal          Menampilkan matriks ketersediaan ruangan (Fase 5.3)');
   console.log('  force, ambilalih      Pengambilalihan paksa ruangan untuk agenda institusi (Fase 5.4)');
   console.log('  forceevent, event     Pemblokiran ruangan untuk agenda seminar/ujian kampus (Fase 5.5)');
+  console.log('  abort, batalforce     Membatalkan pengambilalihan paksa atau agenda blokir (Fase 5.6)');
   console.log(`  ${chalk.red('flushdb <target>')}      ${chalk.bold.red('[DANGER ZONE]')} Menghapus data tabel (all, user, rooms, force_events, bookings)`);
   console.log('  help                  Menampilkan pesan bantuan ini\n');
   console.log(chalk.bold('OPSI GLOBAL:'));
@@ -62,8 +66,11 @@ function printHelp(): void {
   console.log('  denia cancel RAK_2.1 15/10/2026 DEF --jid 08123456789');
   console.log('  denia force RAK_2.1 15/10/2026 DEF "Ujian Sidang" --jid 08987654321');
   console.log('  denia forceevent RAK_1.1,RAK_2.1 15/10/2026-17/10/2026 "Seminar Nasional TI" --jid 08987654321');
+  console.log('  denia abort force 15 --jid 08987654321');
+  console.log('  denia abort event 5 --jid 08987654321');
   console.log('  denia pinjam --interactive');
   console.log('  denia batal --interactive');
+  console.log('  denia abort --interactive');
   console.log('  denia flushdb user');
   console.log('  denia flushdb all --force\n');
 }
@@ -95,6 +102,7 @@ async function main(): Promise<void> {
     ...INFO_OPTIONS,
     ...FORCE_OPTIONS,
     ...FORCE_EVENT_OPTIONS,
+    ...ABORT_OPTIONS,
   };
 
   const { values, positionals } = parseArgs({
@@ -164,6 +172,14 @@ async function main(): Promise<void> {
 
   if (firstPos === 'forceevent' || firstPos === 'event') {
     const result = await executeForceEvent(values, runtimeConfig, positionals);
+    if (!result.success) {
+      handleCliError(result.error);
+    }
+    process.exit(0);
+  }
+
+  if (firstPos === 'abort' || firstPos === 'batalforce') {
+    const result = await executeAbort(values, runtimeConfig, positionals);
     if (!result.success) {
       handleCliError(result.error);
     }

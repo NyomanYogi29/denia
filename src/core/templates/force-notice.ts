@@ -19,6 +19,7 @@ export interface ForceSuccessAnnouncementOptions {
   readonly reason: string;
   readonly staffName: string;
   readonly displacedCount: number;
+  readonly bookingIds?: readonly number[];
 }
 
 /**
@@ -76,11 +77,17 @@ export function formatForceSuccessAnnouncement(
     reason,
     staffName,
     displacedCount,
+    bookingIds,
   } = options;
 
   const displacedNotice =
     displacedCount > 0
       ? `\n⚠️ *Catatan*: ${displacedCount} peminjaman sebelumnya telah digeser dan korti terkait telah dinotifikasi via Japri (DM).`
+      : '';
+
+  const idNotice =
+    bookingIds && bookingIds.length > 0
+      ? `🆔 *ID Pemesanan*: #${bookingIds.join(', #')}\n💡 *Batal Pengambilalihan*: !abort force ${bookingIds[0]}`
       : '';
 
   return [
@@ -92,8 +99,10 @@ export function formatForceSuccessAnnouncement(
     `⏰ *Slot*: ${slotCode} (${timeRange})`,
     `📋 *Agenda / Alasan*: ${reason}`,
     `👤 *Penanggung Jawab*: ${staffName}`,
+    idNotice,
     displacedNotice,
   ]
     .filter((line) => line !== '')
     .join('\n');
 }
+

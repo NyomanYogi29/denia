@@ -87,3 +87,17 @@ export {
   type ForceEventActionOptions,
 } from './force-event/index.ts';
 
+export {
+  ABORT_COMMAND,
+  ABORT_OPTIONS,
+  executeAbort,
+  abortAction,
+  promptAbortInteractive,
+  renderAbortForceSuccess,
+  renderAbortForceEventSuccess,
+  renderHeader as renderAbortHeader,
+  type AbortActionOptions,
+  type AbortActionResult,
+} from './abort/index.ts';
+
+

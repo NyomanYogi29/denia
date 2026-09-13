@@ -5,7 +5,10 @@ import { ErrorCode, ValidationError } from '@/core/errors/index.ts';
 import { cancelBookingUseCase } from '@/core/features/booking/index.ts';
 import { logger } from '@/core/logger/index.ts';
 
+import { createAbortCommandHandler } from './abort.ts';
+
 const log = logger.child({ module: 'COMMAND_BATAL' });
+const abortHandler = createAbortCommandHandler();
 
 /**
  * Factory untuk membuat CommandHandler perintah `!batal` (Fase 5.2).
@@ -23,6 +26,11 @@ const log = logger.child({ module: 'COMMAND_BATAL' });
 export function createBatalCommandHandler(): CommandHandler {
   return async (ctx: MessageContext, sock: WASocket): Promise<void> => {
     const args = ctx.parsedCommand.args;
+
+    // Delegasi otomatis jika pengguna mengetik !batal force [id_booking]
+    if (args[0]?.toLowerCase() === 'force') {
+      return abortHandler(ctx, sock);
+    }
 
     // 1. Validasi sintaks dasar jumlah parameter
     if (args.length < 3) {
