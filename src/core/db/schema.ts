@@ -58,13 +58,10 @@ export const bookings = p.sqliteTable(
     createdAt: p.text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [
-    // Unique index untuk mencegah race-condition double booking pada ruangan, tanggal, slot, dan status
-    p.uniqueIndex('idx_bookings_unique_active_slot').on(
-      table.roomCode,
-      table.bookingDate,
-      table.slotCode,
-      table.status
-    ),
+    // Unique index untuk mencegah race-condition double booking pada ruangan, tanggal, slot yang aktif
+    p.uniqueIndex('idx_bookings_unique_active_slot')
+      .on(table.roomCode, table.bookingDate, table.slotCode)
+      .where(sql`status = 'active'`),
     p.index('idx_bookings_date_room').on(table.bookingDate, table.roomCode),
     p.index('idx_bookings_user').on(table.userJid),
   ]

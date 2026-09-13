@@ -66,15 +66,15 @@ export async function promptAbortInteractive(initial: {
 
   return {
     target: target as 'force' | 'forceevent',
-    id: id.trim(),
-    userJid: userJid.trim(),
+    id: String(id).trim(),
+    userJid: String(userJid).trim(),
   };
 }
 
 export function renderAbortForceSuccess(details: AbortForceBookingDetails): void {
   console.log(chalk.bold.green('\n✔ Berhasil Membatalkan Pengambilalihan Paksa Ruangan!'));
   console.log(chalk.gray('──────────────────────────────────────────────────'));
-  console.log(`Ruangan        : ${chalk.bold.yellow(details.room.code)} (${details.room.roomName})`);
+  console.log(`Ruangan        : ${chalk.bold.yellow(details.room.code)} (${details.room.name})`);
   console.log(`Tanggal        : ${chalk.white(details.date.raw)}`);
   console.log(`Slot SKS       : ${chalk.cyan(details.slot.raw)} (${details.slot.timeRange})`);
   console.log(`ID Pemesanan   : ${chalk.bold.magenta('#' + details.bookings.map((b) => b.id).join(', #'))}`);

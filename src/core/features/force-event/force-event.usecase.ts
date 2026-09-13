@@ -21,6 +21,7 @@ import type {
   ForceEventDetails,
   ForceEventUseCaseInput,
 } from './types.ts';
+import { syncDateFull } from '@/spreadsheets/index.ts';
 
 const log = logger.child({ module: 'FORCE_EVENT_USECASE' });
 
@@ -169,6 +170,8 @@ export async function forceEventUseCase(
           });
         }
       }
+      // Pemicu rekonsiliasi asinkron Google Sheets untuk tanggal acara (non-blocking)
+      void syncDateFull(dateIso);
     }
   }
 

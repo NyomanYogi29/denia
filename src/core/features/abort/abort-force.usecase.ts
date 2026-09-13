@@ -22,6 +22,7 @@ import type {
   AbortForceBookingDetails,
   AbortForceUseCaseInput,
 } from './types.ts';
+import { syncCancelledSlot } from '@/spreadsheets/index.ts';
 
 const log = logger.child({ module: 'ABORT_FORCE_USECASE' });
 
@@ -139,6 +140,11 @@ export async function abortForceBookingUseCase(
       log.debug('Gagal melakukan invalidasi cache jadwal (non-fatal)', {
         error: String(cacheErr),
       });
+    }
+
+    // Pemicu asinkron pengosongan sel di Google Sheets (non-blocking)
+    for (const s of aborted.slotCodes) {
+      void syncCancelledSlot(room.code, aborted.bookingDate, s);
     }
   }
 

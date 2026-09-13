@@ -21,6 +21,7 @@ import type {
   CancelBookingUseCaseInput,
   CancelledBookingDetails,
 } from './types.ts';
+import { syncCancelledSlot } from '@/spreadsheets/index.ts';
 
 const log = logger.child({ module: 'CANCEL_BOOKING_USECASE' });
 
@@ -146,6 +147,11 @@ export async function cancelBookingUseCase(
       log.debug('Gagal melakukan invalidasi cache jadwal (non-fatal)', {
         error: String(cacheErr),
       });
+    }
+
+    // Pemicu asinkron pengosongan sel di Google Sheets (non-blocking)
+    for (const s of slot.slots) {
+      void syncCancelledSlot(room.code, date.iso, s);
     }
   }
 

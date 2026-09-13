@@ -254,8 +254,7 @@ describe('WhatsApp Bot Abort Command Consumer (Fase 5.6 - !abort force & !abort 
   it('harus berhasil memproses pembatalan agenda force event kampus via !abort forceevent', async () => {
     const eventRes = await createForceEventUseCase({
       roomCodes: [testRoomCode],
-      startDate: tomorrowFormatted,
-      endDate: tomorrowFormatted,
+      dateRange: tomorrowFormatted,
       eventName: 'Workshop Akreditasi',
       userJid: testStaffJid,
     });

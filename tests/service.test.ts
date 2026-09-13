@@ -55,24 +55,24 @@ describe('Seeder Service & Phone Sanitizer Module', () => {
       if (result.success) {
         const summary = result.data;
         expect(summary.isDryRun).toBe(true);
-        expect(summary.totalImported).toBe(19);
-        expect(summary.items.length).toBe(19);
+        expect(summary.totalImported).toBe(16);
+        expect(summary.items.length).toBe(16);
 
         // Verifikasi item pertama (PGSD)
         const first = summary.items[0]!;
         expect(first.fakultas).toBe('FIP');
         expect(first.prodi).toBe('PGSD');
-        expect(first.semester).toBe(5);
-        expect(first.kelas).toBe('Q');
-        expect(first.nama).toBe('Anak Agung Dinda Saraswati');
-        expect(first.jid).toBe('6287776716707@s.whatsapp.net');
+        expect(first.semester).toBe(3);
+        expect(first.kelas).toBe('L');
+        expect(first.nama).toBe('Ida Ayu Adi Pramiyani Manuaba');
+        expect(first.jid).toBe('6285935383699@s.whatsapp.net');
 
-        // Verifikasi salah satu item dengan merged cells C (PBI Smt 1 Kelas I)
-        const pbiSmt1I = summary.items.find((i) => i.nama.includes('Sinta Kartika'));
-        expect(pbiSmt1I).toBeDefined();
-        expect(pbiSmt1I?.semester).toBe(1);
-        expect(pbiSmt1I?.kelas).toBe('I');
-        expect(pbiSmt1I?.jid).toBe('6281238575313@s.whatsapp.net');
+        // Verifikasi PBI
+        const pbi = summary.items.find((i) => i.nama.includes('Agus Andika'));
+        expect(pbi).toBeDefined();
+        expect(pbi?.semester).toBe(5);
+        expect(pbi?.kelas).toBe('G');
+        expect(pbi?.jid).toBe('6287762159107@s.whatsapp.net');
 
         // Verifikasi Sistem Informasi
         const siItem = summary.items.find((i) => i.prodi === 'SISTEM INFORMASI' && i.semester === 1);
@@ -89,7 +89,7 @@ describe('Seeder Service & Phone Sanitizer Module', () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.totalImported).toBe(19);
+        expect(result.data.totalImported).toBe(16);
       }
 
       // Cleanup tabel users agar database kembali bersih
@@ -109,7 +109,7 @@ describe('Seeder Service & Phone Sanitizer Module', () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.totalImported).toBe(19);
+        expect(result.data.totalImported).toBe(16);
         expect(result.data.isDryRun).toBe(true);
       }
     });

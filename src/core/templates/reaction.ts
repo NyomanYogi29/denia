@@ -5,6 +5,7 @@ export const ReactionEmoji = Object.freeze({
   PROCESSING: '⏳',
   SUCCESS: '✅',
   FAILED: '❌',
+  REJECTED: '❌',
   DM_SENT: '📩',
   WARNING: '⚠️',
 } as const);

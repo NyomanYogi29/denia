@@ -216,7 +216,7 @@ export const createBotClient = (options: BotClientOptions = {}): BotClient => {
             updateStatus('logged_out');
             log.warn(
               'Sesi WhatsApp telah logout dari perangkat. Membersihkan kredensial auth_info secara aman dan meminta QR code baru...',
-              error
+              { error: String(error) }
             );
             clearAuthCredentials(resolvedAuthDir)
               .then(() => {

@@ -22,6 +22,7 @@ import type {
   BookedRoomDetails,
   CreateBookingUseCaseInput,
 } from './types.ts';
+import { syncBatchBookings } from '@/spreadsheets/index.ts';
 
 const log = logger.child({ module: 'CREATE_BOOKING_USECASE' });
 
@@ -156,6 +157,9 @@ export async function createBookingUseCase(
         error: String(cacheErr),
       });
     }
+
+    // Pemicu asinkron pembaruan Google Sheets mirror (non-blocking)
+    void syncBatchBookings(dbBookingResult.data.map((b) => b.id));
   }
 
   return ok(bookedDetails);

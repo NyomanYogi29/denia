@@ -44,6 +44,8 @@ export function sanitizeSpreadsheetPhone(val: unknown): string | null {
  */
 export function resolveDefaultSpreadsheetPath(): string {
   const candidates = [
+    path.resolve(process.cwd(), 'data/TEST 1 AI MIX.xlsx'),
+    path.resolve(process.cwd(), 'TEST 1 AI MIX.xlsx'),
     path.resolve(process.cwd(), 'data/RUANG KULIAH SDP DENPASAR.xlsx'),
     path.resolve(process.cwd(), 'RUANG KULIAH SDP DENPASAR.xlsx'),
   ];

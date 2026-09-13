@@ -18,6 +18,7 @@ export interface ParsedDate {
 
 export interface DateParseOptions {
   readonly allowPast?: boolean;
+  readonly allowRelativeKeywords?: boolean;
   readonly referenceDate?: Date;
   readonly timeZone?: string;
 }

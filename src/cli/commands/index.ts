@@ -100,4 +100,14 @@ export {
   type AbortActionResult,
 } from './abort/index.ts';
 
+export {
+  SHEETS_COMMAND,
+  SHEETS_OPTIONS,
+  executeSheets,
+  sheetsTestAction,
+  sheetsInitAction,
+  sheetsSyncAction,
+  sheetsSyncWeekAction,
+} from './sheets/index.ts';
+
 

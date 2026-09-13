@@ -15,6 +15,7 @@ import {
   executeForce,
   executeForceEvent,
   executeAbort,
+  executeSheets,
   FLUSHDB_OPTIONS,
   SEED_KORTI_OPTIONS,
   USER_ADD_OPTIONS,
@@ -24,12 +25,14 @@ import {
   FORCE_OPTIONS,
   FORCE_EVENT_OPTIONS,
   ABORT_OPTIONS,
+  SHEETS_OPTIONS,
 } from '@/cli/commands/index.ts';
 
 import {
   CliCommandNotFoundError,
   handleCliError,
 } from '@/cli/errors';
+import { flushQueue } from '@/spreadsheets/index.ts';
 
 /**
  * Mencetak teks bantuan CLI
@@ -47,6 +50,7 @@ function printHelp(): void {
   console.log('  force, ambilalih      Pengambilalihan paksa ruangan untuk agenda institusi (Fase 5.4)');
   console.log('  forceevent, event     Pemblokiran ruangan untuk agenda seminar/ujian kampus (Fase 5.5)');
   console.log('  abort, batalforce     Membatalkan pengambilalihan paksa atau agenda blokir (Fase 5.6)');
+  console.log('  sheets <subcommand>   Manajemen & sinkronisasi Google Sheets (test, init, sync, sync-week) (Fase 6.1)');
   console.log(`  ${chalk.red('flushdb <target>')}      ${chalk.bold.red('[DANGER ZONE]')} Menghapus data tabel (all, user, rooms, force_events, bookings)`);
   console.log('  help                  Menampilkan pesan bantuan ini\n');
   console.log(chalk.bold('OPSI GLOBAL:'));
@@ -103,6 +107,7 @@ async function main(): Promise<void> {
     ...FORCE_OPTIONS,
     ...FORCE_EVENT_OPTIONS,
     ...ABORT_OPTIONS,
+    ...SHEETS_OPTIONS,
   };
 
   const { values, positionals } = parseArgs({
@@ -143,6 +148,7 @@ async function main(): Promise<void> {
     if (!result.success) {
       handleCliError(result.error);
     }
+    await flushQueue();
     process.exit(0);
   }
 
@@ -151,6 +157,7 @@ async function main(): Promise<void> {
     if (!result.success) {
       handleCliError(result.error);
     }
+    await flushQueue();
     process.exit(0);
   }
 
@@ -167,6 +174,7 @@ async function main(): Promise<void> {
     if (!result.success) {
       handleCliError(result.error);
     }
+    await flushQueue();
     process.exit(0);
   }
 
@@ -175,11 +183,21 @@ async function main(): Promise<void> {
     if (!result.success) {
       handleCliError(result.error);
     }
+    await flushQueue();
     process.exit(0);
   }
 
   if (firstPos === 'abort' || firstPos === 'batalforce') {
     const result = await executeAbort(values, runtimeConfig, positionals);
+    if (!result.success) {
+      handleCliError(result.error);
+    }
+    await flushQueue();
+    process.exit(0);
+  }
+
+  if (firstPos === 'sheets' || firstPos === 'spreadsheet' || firstPos === 'sheet') {
+    const result = await executeSheets(values, runtimeConfig, positionals);
     if (!result.success) {
       handleCliError(result.error);
     }

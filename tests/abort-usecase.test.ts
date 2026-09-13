@@ -87,7 +87,7 @@ describe('Abort Force Use Case (src/core/features/abort/abort-force.usecase.ts)'
 
     expect(res.success).toBe(false);
     if (!res.success) {
-      expect(res.error.code).toBe(ErrorCode.UNAUTHORIZED_USER);
+      expect(res.error.code).toBe(ErrorCode.UNAUTHORIZED);
     }
   });
 
@@ -111,7 +111,7 @@ describe('Abort Force Use Case (src/core/features/abort/abort-force.usecase.ts)'
 
     expect(res.success).toBe(false);
     if (!res.success) {
-      expect(res.error.code).toBe(ErrorCode.NOT_FOUND);
+      expect(res.error.code).toBe(ErrorCode.BOOKING_NOT_FOUND);
     }
   });
 
@@ -253,8 +253,7 @@ describe('Abort Force Use Case (src/core/features/abort/abort-force.usecase.ts)'
     // 1. Buat force event
     const eventRes = await createForceEventUseCase({
       roomCodes: [testRoomCode],
-      startDate: tomorrowFormatted,
-      endDate: tomorrowFormatted,
+      dateRange: tomorrowFormatted,
       eventName: 'Ujian Sertifikasi Internasional',
       userJid: testStaffJid,
     });

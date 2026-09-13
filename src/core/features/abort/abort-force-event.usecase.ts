@@ -16,6 +16,7 @@ import type {
   AbortForceEventDetails,
   AbortForceEventUseCaseInput,
 } from './types.ts';
+import { syncDateFull } from '@/spreadsheets/index.ts';
 
 const log = logger.child({ module: 'ABORT_FORCE_EVENT_USECASE' });
 
@@ -103,6 +104,9 @@ export async function abortForceEventUseCase(
         });
       }
     }
+
+    // Pemicu rekonsiliasi asinkron Google Sheets untuk tanggal acara yang dibatalkan
+    void syncDateFull(aborted.startDate);
   }
 
   const details: AbortForceEventDetails = Object.freeze({

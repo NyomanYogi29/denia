@@ -195,7 +195,9 @@ describe('Get Room Availability Use Case (src/core/features/info/get-room-availa
     // 1. Initial state: cache is empty
     const initGet = await redisGet(cacheKey);
     expect(initGet.success).toBe(true);
-    expect(initGet.data).toBeNull();
+    if (initGet.success) {
+      expect(initGet.data).toBeNull();
+    }
 
     // 2. Query availability -> populates cache
     const queryResult = await getRoomAvailabilityUseCase({
@@ -206,9 +208,11 @@ describe('Get Room Availability Use Case (src/core/features/info/get-room-availa
 
     const cachedGet = await redisGet(cacheKey);
     expect(cachedGet.success).toBe(true);
-    expect(cachedGet.data).not.toBeNull();
-    const parsedCache = JSON.parse(cachedGet.data!);
-    expect(parsedCache.formattedMessage).toBeDefined();
+    if (cachedGet.success) {
+      expect(cachedGet.data).not.toBeNull();
+      const parsedCache = JSON.parse(cachedGet.data!);
+      expect(parsedCache.formattedMessage).toBeDefined();
+    }
 
     // 3. Create booking -> must invalidate cache
     const bookingResult = await createBookingUseCase({
@@ -223,7 +227,9 @@ describe('Get Room Availability Use Case (src/core/features/info/get-room-availa
     // Cache should be evicted now
     const afterBookingGet = await redisGet(cacheKey);
     expect(afterBookingGet.success).toBe(true);
-    expect(afterBookingGet.data).toBeNull();
+    if (afterBookingGet.success) {
+      expect(afterBookingGet.data).toBeNull();
+    }
   });
 });
 

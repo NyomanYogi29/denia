@@ -152,9 +152,16 @@
 ---
 
 ### 🔹 Fase 6: Background Sync Google Sheets & Cron Scheduler
-- [ ] **6.1 Google Sheets Mirror Worker (`src/core/services/sheets.service.ts`)**
-  - Background worker batch sync berkala untuk update template monitoring staf SDP.
-  - Format penulisan sel seragam: `[Prodi]/[Kelas]/[Nama Dosen atau Korti]` (Contoh: `SI/3DPS/Ir. I Made Ardwi Pradnyana`).
+- [x] **6.1 Google Sheets Mirror Worker (`src/spreadsheets/`)**
+  - Status: *Sudah terimplementasi & teruji (Completed)*.
+  - Direktori mandiri `src/spreadsheets/` menggunakan library resmi `googleapis` dan kredensial Google Service Account (`GOOGLE_SERVICE_ACCOUNT_PATH`, `GOOGLE_SHEET_ID`).
+  - Mendukung 5 tab hari kerja (`SENIN` - `JUMAT`) untuk pekan berjalan dengan header tanggal dinamis `TANGGAL: [DD/MM/YYYY]`.
+  - Mapping koordinat sel akurat: 27 ruangan aktif SDP pada baris 6–21 (RAK), 27–39 (KHD), 45 (Lainnya) dan slot A–O pada kolom C–Q (termasuk Slot O di kolom Q).
+  - Format string sel seragam: `[Prodi]/[Kelas]/[Nama]` (e.g. `SI/3DPS/Ir. I Made Ardwi Pradnyana`).
+  - Perlindungan Google API Rate Limit: Arsitektur antrean non-blocking berbasis *debounced micro-batch queue* (jendela pengumpulan 1000ms, jeda antar-dispatch 1500ms, deduplikasi sel pada slot yang sama, serta *exponential backoff* dengan jitter).
+  - Terintegrasi mulus ke seluruh use case (`create-booking`, `cancel-booking`, `force-booking`, `force-event`, `abort-force`, `abort-force-event`).
+  - Antarmuka CLI lengkap di `src/cli/commands/sheets/`: `denia sheets init` (template generator), `denia sheets test`, `denia sheets sync [DD/MM/YYYY]`, dan `denia sheets sync-week`.
+  - Terverifikasi 100% dengan 22 unit test baru di `tests/spreadsheets-*.test.ts` serta uji sinkronisasi riil ke spreadsheet Google Sheets SDP.
 - [ ] **6.2 Cron Job Rekap Terjadwal (`src/core/cron/daily-recap.ts`)**
   - Eksekusi terjadwal 2 kali sehari:
     - **Pukul 07:00 WITA**: Rekapitulasi penuh pemakaian seluruh ruangan untuk **Hari Ini (Hari H)**.

@@ -103,6 +103,7 @@ export async function abortForceBookingImmediate(
 
       if (rows.length === 0) {
         throw new NotFoundError(
+          ErrorCode.BOOKING_NOT_FOUND,
           `Peminjaman paksa dengan ID #${bookingIds.join(', #')} tidak ditemukan di database.`,
           { bookingIds }
         );
@@ -312,6 +313,7 @@ export async function abortForceEventImmediate(
 
       if (!targetEvent) {
         throw new NotFoundError(
+          ErrorCode.RESOURCE_NOT_FOUND,
           `Agenda pemblokiran ruangan (force event) dengan ID #${eventId} tidak ditemukan.`,
           { eventId }
         );

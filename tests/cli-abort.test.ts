@@ -98,7 +98,7 @@ describe('CLI Abort Command Consumer (Fase 5.6 - denia abort force / event)', ()
     // denia abort force <bookingId> --jid <staffJid>
     const result = await executeAbort(
       { jid: testStaffJid },
-      { isQuiet: true },
+      { isQuiet: true } as any,
       ['abort', 'force', String(bookingId)]
     );
 
@@ -111,8 +111,7 @@ describe('CLI Abort Command Consumer (Fase 5.6 - denia abort force / event)', ()
   it('should execute abort forceevent via positional args in executeAbort', async () => {
     const eventRes = await createForceEventUseCase({
       roomCodes: [testRoomCode],
-      startDate: tomorrowFormatted,
-      endDate: tomorrowFormatted,
+      dateRange: tomorrowFormatted,
       eventName: 'Seminar CLI',
       userJid: testStaffJid,
     });
@@ -124,7 +123,7 @@ describe('CLI Abort Command Consumer (Fase 5.6 - denia abort force / event)', ()
     // denia abort event <eventId> --jid <staffJid>
     const result = await executeAbort(
       { jid: testStaffJid },
-      { isQuiet: true },
+      { isQuiet: true } as any,
       ['abort', 'event', String(eventId)]
     );
 

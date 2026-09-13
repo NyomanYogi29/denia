@@ -141,6 +141,11 @@ const resolveAppError = (error: AppError): ResolvedError => {
       logLevel = 'warn';
       break;
 
+    case ErrorCode.EXTERNAL_API_ERROR:
+      suggestion = 'Terjadi kendala saat berkomunikasi dengan layanan eksternal (Google Sheets API). Silakan periksa kredensial atau kuota API.';
+      logLevel = 'error';
+      break;
+
     case ErrorCode.DATABASE_ERROR:
     case ErrorCode.INTERNAL_ERROR:
       suggestion = 'Terjadi kesalahan sistem. Silakan coba kembali atau hubungi pengelola SDP.';
