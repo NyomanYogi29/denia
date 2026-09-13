@@ -13,6 +13,7 @@ import {
   executeCancel,
   executeInfo,
   executeForce,
+  executeForceEvent,
   FLUSHDB_OPTIONS,
   SEED_KORTI_OPTIONS,
   USER_ADD_OPTIONS,
@@ -20,6 +21,7 @@ import {
   CANCEL_OPTIONS,
   INFO_OPTIONS,
   FORCE_OPTIONS,
+  FORCE_EVENT_OPTIONS,
 } from '@/cli/commands/index.ts';
 import {
   CliCommandNotFoundError,
@@ -40,6 +42,7 @@ function printHelp(): void {
   console.log('  cancel, batal         Membatalkan peminjaman ruangan kuliah SDP Undiksha (Fase 5.2)');
   console.log('  info, jadwal          Menampilkan matriks ketersediaan ruangan (Fase 5.3)');
   console.log('  force, ambilalih      Pengambilalihan paksa ruangan untuk agenda institusi (Fase 5.4)');
+  console.log('  forceevent, event     Pemblokiran ruangan untuk agenda seminar/ujian kampus (Fase 5.5)');
   console.log(`  ${chalk.red('flushdb <target>')}      ${chalk.bold.red('[DANGER ZONE]')} Menghapus data tabel (all, user, rooms, force_events, bookings)`);
   console.log('  help                  Menampilkan pesan bantuan ini\n');
   console.log(chalk.bold('OPSI GLOBAL:'));
@@ -58,6 +61,7 @@ function printHelp(): void {
   console.log('  denia book RAK_2.1 15/10/2026 DEF --jid 08123456789');
   console.log('  denia cancel RAK_2.1 15/10/2026 DEF --jid 08123456789');
   console.log('  denia force RAK_2.1 15/10/2026 DEF "Ujian Sidang" --jid 08987654321');
+  console.log('  denia forceevent RAK_1.1,RAK_2.1 15/10/2026-17/10/2026 "Seminar Nasional TI" --jid 08987654321');
   console.log('  denia pinjam --interactive');
   console.log('  denia batal --interactive');
   console.log('  denia flushdb user');
@@ -90,6 +94,7 @@ async function main(): Promise<void> {
     ...CANCEL_OPTIONS,
     ...INFO_OPTIONS,
     ...FORCE_OPTIONS,
+    ...FORCE_EVENT_OPTIONS,
   };
 
   const { values, positionals } = parseArgs({
@@ -156,6 +161,15 @@ async function main(): Promise<void> {
     }
     process.exit(0);
   }
+
+  if (firstPos === 'forceevent' || firstPos === 'event') {
+    const result = await executeForceEvent(values, runtimeConfig, positionals);
+    if (!result.success) {
+      handleCliError(result.error);
+    }
+    process.exit(0);
+  }
+
 
   if (firstPos === 'flushdb' || firstPos?.startsWith('flushdb:')) {
     const target = firstPos.includes(':') ? firstPos.split(':')[1] : secondPos;

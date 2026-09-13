@@ -75,3 +75,15 @@ export {
   renderHeader as renderForceHeader,
   type ForceActionOptions,
 } from './force/index.ts';
+
+export {
+  FORCE_EVENT_COMMAND,
+  FORCE_EVENT_OPTIONS,
+  executeForceEvent,
+  forceEventAction,
+  promptForceEventInteractive,
+  renderSuccess as renderForceEventSuccess,
+  renderHeader as renderForceEventHeader,
+  type ForceEventActionOptions,
+} from './force-event/index.ts';
+

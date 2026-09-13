@@ -134,10 +134,15 @@
   - Parameter alasan wajib dicantumkan.
   - Menimpa booking yang ada (ubah status booking korti lama menjadi `force_cancelled`).
   - Kirim peringatan otomatis via DM ke korti terdampak untuk mencari kelas lain via `!info`.
-- [ ] **5.5 `!forceevent [list_ruangan] [DD/MM/YYYY-DD/MM/YYYY] [nama_acara]`**
+- [x] **5.5 `!forceevent [list_ruangan] [DD/MM/YYYY-DD/MM/YYYY] [nama_acara]`**
   - Blokir sekumpulan ruangan sekaligus untuk rentang tanggal tertentu (seminar/ujian).
+  - Validasi rentang tanggal (`DD/MM/YYYY-DD/MM/YYYY` atau single date `DD/MM/YYYY`) dan daftar ruangan (koma-terpisah).
+  - Menimpa booking yang ada secara atomik via SQLite `BEGIN IMMEDIATE` (ubah status booking korti lama menjadi `force_cancelled`).
+  - Kirim notifikasi peringatan otomatis via DM ke masing-masing korti terdampak dengan slot terkompresi.
+  - Pengumuman resmi di grup/chat dan dukungan perintah CLI `denia forceevent`.
 - [ ] **5.6 `!abort force [id_booking]`**
   - Membatalkan status pemblokiran/force ruangan oleh admin.
+
 
 ---
 

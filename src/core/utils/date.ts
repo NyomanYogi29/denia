@@ -359,3 +359,113 @@ export function validateBookingLeadTime(
 
   return ok(result);
 }
+
+export interface ParsedDateRange {
+  readonly raw: string;
+  readonly startDate: ParsedDate;
+  readonly endDate: ParsedDate;
+  readonly isSingleDay: boolean;
+  readonly dateIsos: readonly string[];
+  readonly formattedRange: string;
+}
+
+/**
+ * Memvalidasi dan melakukan parsing format rentang tanggal (DD/MM/YYYY-DD/MM/YYYY atau tanggal tunggal DD/MM/YYYY).
+ * Menghasilkan daftar seluruh tanggal ISO berurutan di dalam rentang tersebut.
+ */
+export function parseDateRangeString(
+  raw: string,
+  options?: DateParseOptions
+): Result<ParsedDateRange> {
+  if (!raw || typeof raw !== 'string' || !raw.trim()) {
+    return err(
+      new ValidationError(ErrorCode.INVALID_DATE_FORMAT, 'Rentang tanggal tidak boleh kosong.', {
+        raw,
+      })
+    );
+  }
+
+  const trimmed = raw.trim();
+
+  // Pola pemisah rentang: tanda minus (-), sampai / s.d. / s/d / ..
+  const rangeSeparatorRegex = /\s*(?:-|s\.d\.|s\/d|sampai|\.\.)\s*/i;
+  const parts = trimmed.split(rangeSeparatorRegex).filter(Boolean);
+
+  if (parts.length === 0 || parts.length > 2) {
+    return err(
+      new ValidationError(
+        ErrorCode.INVALID_DATE_FORMAT,
+        `Format rentang tanggal "${trimmed}" tidak valid. Gunakan format DD/MM/YYYY-DD/MM/YYYY atau DD/MM/YYYY (Contoh: 15/10/2026-17/10/2026).`,
+        { raw: trimmed }
+      )
+    );
+  }
+
+  const startPart = parts[0]!;
+  const endPart = parts.length === 2 ? parts[1]! : startPart;
+
+  const startRes = parseDateString(startPart, options);
+  if (!startRes.success) {
+    return startRes;
+  }
+
+  const endRes = parseDateString(endPart, options);
+  if (!endRes.success) {
+    return endRes;
+  }
+
+  const startDate = startRes.data;
+  const endDate = endRes.data;
+
+  if (startDate.iso > endDate.iso) {
+    return err(
+      new ValidationError(
+        ErrorCode.INVALID_DATE_FORMAT,
+        `Tanggal mulai (${startDate.raw}) tidak boleh lebih besar dari tanggal selesai (${endDate.raw}).`,
+        { raw: trimmed, startIso: startDate.iso, endIso: endDate.iso }
+      )
+    );
+  }
+
+  // Hitung semua tanggal ISO di dalam rentang
+  const dateIsos: string[] = [];
+  const curr = new Date(startDate.year, startDate.month - 1, startDate.day);
+  const end = new Date(endDate.year, endDate.month - 1, endDate.day);
+
+  // Batas wajar rentang (maksimal 90 hari)
+  const dayDiff = Math.round((end.getTime() - curr.getTime()) / (24 * 60 * 60 * 1000));
+  if (dayDiff > 90) {
+    return err(
+      new ValidationError(
+        ErrorCode.INVALID_DATE_FORMAT,
+        `Rentang waktu (${dayDiff + 1} hari) melebihi batas maksimal yang diizinkan sistem (90 hari).`,
+        { raw: trimmed, dayDiff: dayDiff + 1 }
+      )
+    );
+  }
+
+  while (curr <= end) {
+    const year = curr.getFullYear();
+    const month = String(curr.getMonth() + 1).padStart(2, '0');
+    const day = String(curr.getDate()).padStart(2, '0');
+    dateIsos.push(`${year}-${month}-${day}`);
+    curr.setDate(curr.getDate() + 1);
+  }
+
+  const isSingleDay = startDate.iso === endDate.iso;
+  const formattedRange = isSingleDay
+    ? startDate.raw
+    : `${startDate.raw} s.d. ${endDate.raw}`;
+
+  const parsedRange: ParsedDateRange = Object.freeze({
+    raw: trimmed,
+    startDate,
+    endDate,
+    isSingleDay,
+    dateIsos: Object.freeze(dateIsos),
+    formattedRange,
+  });
+
+  return ok(parsedRange);
+}
+

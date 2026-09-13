@@ -18,10 +18,12 @@ export {
   getCurrentWitaTime,
   isoToDateString,
   parseDateString,
+  parseDateRangeString,
   formatIndonesianDate,
   calculateLeadTimeDays,
   validateBookingLeadTime,
   type ParsedDate,
+  type ParsedDateRange,
   type DateParseOptions,
   type BookingLeadTimeResult,
   type LeadTimeOptions,
@@ -29,8 +31,10 @@ export {
 
 export {
   parseRoomCode,
+  parseRoomCodes,
   type ParsedRoom,
 } from './room-parser.ts';
+
 
 export {
   normalizeToWhatsAppJid,

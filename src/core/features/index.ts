@@ -4,3 +4,4 @@ export * from './seeder/index.ts';
 export * from './booking/index.ts';
 export * from './info/index.ts';
 export * from './force/index.ts';
+export * from './force-event/index.ts';

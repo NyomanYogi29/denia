@@ -7,12 +7,14 @@ import {
 import { createBatalCommandHandler } from './batal.ts';
 import { createInfoCommandHandler } from './info.ts';
 import { createForceCommandHandler } from './force.ts';
+import { createForceEventCommandHandler } from './force-event.ts';
 
 export {
   createPinjamCommandHandler,
   createBatalCommandHandler,
   createInfoCommandHandler,
   createForceCommandHandler,
+  createForceEventCommandHandler,
 };
 export type { PinjamCommandOptions };
 
@@ -33,6 +35,7 @@ export function registerDefaultBotCommands(
   const batalHandler = createBatalCommandHandler();
   const infoHandler = createInfoCommandHandler();
   const forceHandler = createForceCommandHandler();
+  const forceEventHandler = createForceEventCommandHandler();
 
   router.register('pinjam', pinjamHandler);
   router.register('book', pinjamHandler);
@@ -43,6 +46,9 @@ export function registerDefaultBotCommands(
   router.register('force', forceHandler);
   router.register('ambilalih', forceHandler);
   router.register('paksa', forceHandler);
+  router.register('forceevent', forceEventHandler);
+  router.register('event', forceEventHandler);
+  router.register('blokir', forceEventHandler);
 
   return router;
 }

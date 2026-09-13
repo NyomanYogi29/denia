@@ -54,3 +54,60 @@ export function parseRoomCode(raw: string): Result<ParsedRoom> {
   log.debug('Berhasil mem-parsing kode ruangan', { roomCode: roomInfo.code });
   return ok(parsedRoom);
 }
+
+/**
+ * Melakukan parsing dan validasi sekumpulan kode ruangan SDP Undiksha (bisa berupa string dipisahkan koma atau array).
+ * Mengembalikan array RoomInfo jika seluruh ruangan terdaftar, atau error jika ada yang tidak terdaftar / kosong.
+ */
+export function parseRoomCodes(
+  raw: string | readonly string[]
+): Result<readonly RoomInfo[]> {
+  const codes = Array.isArray(raw)
+    ? raw
+    : typeof raw === 'string'
+      ? raw.split(/[,+]/)
+      : [];
+
+  const cleanedCodes = [
+    ...new Set(
+      codes
+        .map((c) => (typeof c === 'string' ? c.trim().toUpperCase() : ''))
+        .filter(Boolean)
+    ),
+  ];
+
+  if (cleanedCodes.length === 0) {
+    return err(
+      new ValidationError(
+        ErrorCode.INVALID_COMMAND_SYNTAX,
+        'Daftar kode ruangan tidak boleh kosong.',
+        { raw }
+      )
+    );
+  }
+
+  const invalidRooms: string[] = [];
+  const validRooms: RoomInfo[] = [];
+
+  for (const code of cleanedCodes) {
+    if (!isValidRoomCode(code)) {
+      invalidRooms.push(code);
+    } else {
+      validRooms.push(ROOM_MAP[code]!);
+    }
+  }
+
+  if (invalidRooms.length > 0) {
+    log.warn('Terdapat kode ruangan tidak valid pada daftar', { invalidRooms });
+    return err(
+      new NotFoundError(
+        ErrorCode.ROOM_NOT_FOUND,
+        `Ruangan berikut tidak terdaftar di sistem SDP Undiksha: ${invalidRooms.join(', ')}.`,
+        { invalidRooms, raw }
+      )
+    );
+  }
+
+  return ok(Object.freeze(validRooms));
+}
+
