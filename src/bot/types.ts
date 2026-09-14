@@ -60,6 +60,12 @@ export interface BotClientOptions {
    * Callback ketika pairing code diterima dari Baileys
    */
   readonly onPairingCode?: (code: string) => void;
+
+  /**
+   * Log level untuk logger internal Baileys (default: process.env.BAILEYS_LOG_LEVEL || 'warn')
+   * Gunakan 'warn' atau 'silent' untuk meredam spam handshake WS dan sinyal Baileys.
+   */
+  readonly baileysLogLevel?: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace' | 'silent';
 }
 
 export type EventHandler<T extends keyof BaileysEventMap> = (arg: BaileysEventMap[T]) => void | Promise<void>;
@@ -199,6 +205,10 @@ export interface MessageRouter {
    * Mendapatkan handler yang terdaftar untuk suatu perintah
    */
   readonly get: (command: string) => CommandHandler | undefined;
+  /**
+   * Mendapatkan daftar seluruh nama perintah yang telah terdaftar di router
+   */
+  readonly getRegisteredCommands: () => readonly string[];
   /**
    * Memproses pesan masuk tunggal (filter prefix, ekstraksi JID, reaksi ⏳, auto-resolusi user)
    */

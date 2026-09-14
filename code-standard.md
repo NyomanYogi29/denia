@@ -135,7 +135,13 @@ export function validateBookingLeadTime(bookingDate: string, role: string): Resu
    import { logger } from '@/core/logger';
    const log = logger.child({ module: 'BUFFER_SERVICE' });
    ```
-3. **Pengecualian CLI**: Script antarmuka terminal interaktif di `src/cli/` diizinkan menggunakan format print konsol / `@clack/prompts` demi kenyamanan pengguna terminal.
+3. **Pengendalian Level Log via Environment Variable**: Logger utama membaca `process.env.LOG_LEVEL` dengan default `info` untuk aktivitas operasional harian, dan dapat dinaikkan ke `debug` hanya saat sedang aktif menelusuri bug tertentu.
+4. **Pretty Print Single Line (`singleLine: true`)**: Transport `pino-pretty` di mode development wajib dikonfigurasi dengan `singleLine: true` agar metadata terkompresi secara horizontal menjadi satu baris yang rapi tanpa memakan 4–8 baris vertikal.
+5. **Eliminasi Metadata Redundan**: Jangan menyertakan field manual seperti `status: "DEBUG"` atau `status: "SUCCESS"` dalam payload objek metadata log. Pino sudah otomatis menyertakan level log standar (`level: 20` untuk debug, `level: 30` untuk info) sehingga penambahan status manual bersifat redundan dan memboroskan alokasi memori.
+6. **Agregasi Loop & Registrasi Handler**: Dilarang memanggil `log.debug()` / `log.info()` di dalam loop iterasi pendaftaran (misalnya loop registrasi command router). Seluruh registrasi wajib diagregasikan menjadi satu log ringkasan informatif di akhir proses (mencatat total perintah aktif dan daftarnya dalam array).
+7. **Pemisahan Log Esensial vs Diagnostik**: Pada operasi teknis (seperti snapshot backup SQLite), pisahkan informasi esensial dan diagnostik. Cukup catat status sukses di level `INFO` (misal nama berkas backup), dan pindahkan metadata teknis yang detail (`sizeBytes`, `backupDir`, `rotatedCount`, `retainedCount`) ke level `DEBUG`.
+8. **Mute / Pengendalian Log Baileys**: Logger Baileys (`makeWASocket`) wajib diisolasi menggunakan child logger tersendiri (`module: 'BAILEYS_SOCKET'`) dengan level default `warn` atau `silent` (dapat dikendalikan via `process.env.BAILEYS_LOG_LEVEL` atau opsi `BotClientOptions.baileysLogLevel`) guna meredam spam handshake WebSocket dan decoding sinyal Baileys.
+9. **Pengecualian CLI**: Script antarmuka terminal interaktif di `src/cli/` diizinkan menggunakan format print konsol / `@clack/prompts` demi kenyamanan pengguna terminal.
 
 ---
 

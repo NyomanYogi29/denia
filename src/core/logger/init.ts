@@ -8,7 +8,7 @@ import { config } from '../config/index.ts';
  */
 const createBaseLogger = (): Logger => {
   const isDev = config.app.env === 'development';
-  const logLevel = Bun.env.LOG_LEVEL || (isDev ? 'debug' : 'info');
+  const logLevel = process.env.LOG_LEVEL || Bun.env.LOG_LEVEL || 'info';
 
   const options: LoggerOptions = {
     level: logLevel,
@@ -24,7 +24,7 @@ const createBaseLogger = (): Logger => {
           colorize: true,
           translateTime: 'SYS:yyyy-mm-dd HH:MM:ss.l',
           ignore: 'pid,hostname',
-          singleLine: false,
+          singleLine: true,
         },
       },
     });

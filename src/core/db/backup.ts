@@ -96,8 +96,8 @@ export async function backupDatabase(
       log.warn('Peringatan saat membersihkan rotasi file backup lama', { error: String(rotateErr) });
     }
 
-    log.success('Snapshot backup database SQLite berhasil dibuat.', {
-      fileName,
+    log.info(`Snapshot backup database SQLite berhasil dibuat (${fileName})`);
+    log.debug('Detail teknis snapshot backup database', {
       sizeBytes,
       backupDir,
       rotatedCount,

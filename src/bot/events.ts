@@ -107,7 +107,6 @@ export function createMessageRouter(
   const register = (command: string, handler: CommandHandler): MessageRouter => {
     const normalized = command.trim().toLowerCase();
     commandHandlers.set(normalized, handler);
-    log.debug(`Handler untuk perintah "!${normalized}" berhasil didaftarkan`);
     return router;
   };
 
@@ -117,6 +116,10 @@ export function createMessageRouter(
 
   const get = (command: string): CommandHandler | undefined => {
     return commandHandlers.get(command.trim().toLowerCase());
+  };
+
+  const getRegisteredCommands = (): readonly string[] => {
+    return Array.from(commandHandlers.keys());
   };
 
   const handleMessage = async (
@@ -331,6 +334,7 @@ export function createMessageRouter(
     register,
     has,
     get,
+    getRegisteredCommands,
     handleMessage,
     attachToClient,
   });

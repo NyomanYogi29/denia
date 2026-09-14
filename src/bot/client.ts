@@ -59,6 +59,10 @@ export const createBotClient = (options: BotClientOptions = {}): BotClient => {
   const autoReconnect = options.autoReconnect ?? true;
   const maxReconnectAttempts = options.maxReconnectAttempts ?? 0;
   const reconnectIntervalMs = options.reconnectIntervalMs ?? 3000;
+  const resolvedBaileysLogLevel =
+    options.baileysLogLevel ??
+    (process.env.BAILEYS_LOG_LEVEL as any) ??
+    'warn';
 
   let currentStatus: ConnectionStatus = 'idle';
   let currentSocket: WASocket | null = null;
@@ -157,7 +161,7 @@ export const createBotClient = (options: BotClientOptions = {}): BotClient => {
 
       const baileysPinoLogger = baseLogger.child(
         { module: 'BAILEYS_SOCKET' },
-        { level: 'warn' }
+        { level: resolvedBaileysLogLevel }
       );
 
       const sock = makeWASocket({

@@ -22,7 +22,6 @@ export class AppLogger {
   success(message: string, meta?: Record<string, unknown>): void {
     baseLogger.info(
       {
-        status: 'SUCCESS',
         ...this.defaultContext,
         ...meta,
       },
@@ -61,7 +60,6 @@ export class AppLogger {
 
     baseLogger.error(
       {
-        status: 'ERROR',
         ...this.defaultContext,
         ...errorDetails,
         ...meta,
@@ -76,7 +74,6 @@ export class AppLogger {
   warn(message: string, meta?: Record<string, unknown>): void {
     baseLogger.warn(
       {
-        status: 'WARN',
         ...this.defaultContext,
         ...meta,
       },
@@ -90,7 +87,6 @@ export class AppLogger {
   debug(message: string, meta?: Record<string, unknown>): void {
     baseLogger.debug(
       {
-        status: 'DEBUG',
         ...this.defaultContext,
         ...meta,
       },

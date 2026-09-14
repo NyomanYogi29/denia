@@ -1,5 +1,6 @@
-import type { MessageRouter } from '@/bot/types.ts';
+import type { CommandHandler, MessageRouter } from '@/bot/types.ts';
 import type { BufferService } from '@/core/services/buffer.ts';
+import { logger } from '@/core/logger';
 import {
   createPinjamCommandHandler,
   type PinjamCommandOptions,
@@ -24,6 +25,8 @@ export interface DefaultCommandsOptions {
   readonly bufferService?: BufferService;
 }
 
+const log = logger.child({ module: 'COMMAND_REGISTRATION' });
+
 /**
  * Mendaftarkan seluruh command handler bot standar ke instance MessageRouter.
  */
@@ -40,21 +43,37 @@ export function registerDefaultBotCommands(
   const forceEventHandler = createForceEventCommandHandler();
   const abortHandler = createAbortCommandHandler();
 
-  router.register('pinjam', pinjamHandler);
-  router.register('book', pinjamHandler);
-  router.register('batal', batalHandler);
-  router.register('cancel', batalHandler);
-  router.register('info', infoHandler);
-  router.register('jadwal', infoHandler);
-  router.register('force', forceHandler);
-  router.register('ambilalih', forceHandler);
-  router.register('paksa', forceHandler);
-  router.register('forceevent', forceEventHandler);
-  router.register('event', forceEventHandler);
-  router.register('blokir', forceEventHandler);
-  router.register('abort', abortHandler);
-  router.register('batalforce', abortHandler);
+  const commandEntries: ReadonlyArray<readonly [string, CommandHandler]> = [
+    ['pinjam', pinjamHandler],
+    ['book', pinjamHandler],
+    ['batal', batalHandler],
+    ['cancel', batalHandler],
+    ['info', infoHandler],
+    ['jadwal', infoHandler],
+    ['force', forceHandler],
+    ['ambilalih', forceHandler],
+    ['paksa', forceHandler],
+    ['forceevent', forceEventHandler],
+    ['event', forceEventHandler],
+    ['blokir', forceEventHandler],
+    ['abort', abortHandler],
+    ['batalforce', abortHandler],
+  ];
+
+  for (const [command, handler] of commandEntries) {
+    router.register(command, handler);
+  }
+
+  const registeredList = commandEntries.map(([command]) => command);
+  log.info(
+    `Seluruh command handler bot berhasil dimuat (${registeredList.length} perintah aktif)`,
+    {
+      totalCommands: registeredList.length,
+      commands: registeredList,
+    }
+  );
 
   return router;
 }
+
 

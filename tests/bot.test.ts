@@ -10,6 +10,7 @@ import {
   dispatchRejection,
   dispatchSuccess,
   extractMessageText,
+  registerDefaultBotCommands,
   sendReaction,
   type MessageContext,
 } from '@/bot';
@@ -106,6 +107,7 @@ describe('WhatsApp Bot Client Module', () => {
       autoReconnect: false,
       maxReconnectAttempts: 5,
       reconnectIntervalMs: 5000,
+      baileysLogLevel: 'silent',
     });
 
     const options = client.getOptions();
@@ -320,6 +322,32 @@ describe('WhatsApp Events & Message Router Module (src/bot/events.ts)', () => {
       await resetRateLimit('628123456789@s.whatsapp.net');
       await resetRateLimit('628111222333@s.whatsapp.net');
       await resetRateLimit('628999000111@s.whatsapp.net');
+    });
+
+    it('should track and return registered command names via getRegisteredCommands', () => {
+      const router = createMessageRouter();
+      expect(router.getRegisteredCommands()).toEqual([]);
+
+      router.register('ping', () => {});
+      router.register('status', () => {});
+
+      expect(router.getRegisteredCommands()).toEqual(['ping', 'status']);
+      expect(router.has('PING')).toBe(true);
+      expect(router.has('status')).toBe(true);
+    });
+
+    it('should aggregate default bot commands and expose active commands list', () => {
+      const router = createMessageRouter();
+      registerDefaultBotCommands(router);
+
+      const registered = router.getRegisteredCommands();
+      expect(registered.length).toBeGreaterThanOrEqual(14);
+      expect(registered).toContain('pinjam');
+      expect(registered).toContain('batal');
+      expect(registered).toContain('info');
+      expect(registered).toContain('force');
+      expect(registered).toContain('forceevent');
+      expect(registered).toContain('abort');
     });
 
     it('should filter out non-command messages and return ok(null)', async () => {
