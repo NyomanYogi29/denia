@@ -39,3 +39,7 @@ export {
   type AbortForceEventSuccessAnnouncementOptions,
   type AbortForceEventRestoredDmOptions,
 } from './abort-notice.ts';
+export {
+  formatHelpMessage,
+  type HelpMessageOptions,
+} from './help.ts';

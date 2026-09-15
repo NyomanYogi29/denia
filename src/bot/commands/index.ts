@@ -10,6 +10,7 @@ import { createInfoCommandHandler } from './info.ts';
 import { createForceCommandHandler } from './force.ts';
 import { createForceEventCommandHandler } from './force-event.ts';
 import { createAbortCommandHandler } from './abort.ts';
+import { createHelpCommandHandler } from './help.ts';
 
 export {
   createPinjamCommandHandler,
@@ -18,6 +19,7 @@ export {
   createForceCommandHandler,
   createForceEventCommandHandler,
   createAbortCommandHandler,
+  createHelpCommandHandler,
 };
 export type { PinjamCommandOptions };
 
@@ -42,6 +44,7 @@ export function registerDefaultBotCommands(
   const forceHandler = createForceCommandHandler();
   const forceEventHandler = createForceEventCommandHandler();
   const abortHandler = createAbortCommandHandler();
+  const helpHandler = createHelpCommandHandler();
 
   const commandEntries: ReadonlyArray<readonly [string, CommandHandler]> = [
     ['pinjam', pinjamHandler],
@@ -58,6 +61,10 @@ export function registerDefaultBotCommands(
     ['blokir', forceEventHandler],
     ['abort', abortHandler],
     ['batalforce', abortHandler],
+    ['help', helpHandler],
+    ['panduan', helpHandler],
+    ['bantuan', helpHandler],
+    ['menu', helpHandler],
   ];
 
   for (const [command, handler] of commandEntries) {
